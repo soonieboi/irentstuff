@@ -1,39 +1,40 @@
-# Rental
+# Practise module repo
+iRentStuff is an online rental service where users can post their used items up for rental.
 
-Rental is a web application, where people, who have shifted to new location, can get their dream house to live on rent in cheap and easy way. 
+## Defining the Problem Space & Current Landscape:
 
-Another aspect of the application is that it also provide people a platform to put the advertisement of their houses and rooms.
+1. Item owners often own personal items but use them infrequently
+2. Users may hesitate to purchase items due to cost, lack of storage space, or having no use for the specific item for a long period of time
+3. Users have to explore multiple sites to list their items but the incumbent sites are not designed for rental market use
+4. Growing interest in the sharing economy
+5. Push to reduce waste
+6. Giving items a new lease of life
 
-It work as a mediator between costumer and the owner. 
+## Gaps in the market/solution space today:
 
-It also provide you a range of houses based on your preference as cost, location, features etc.
+1. Lack of a dedicated platform for renting personal items
+2. Difficulty in finding specific items for temporary use locally; many random platforms like gumtree, or carousell attempt to do this but the search and cataloging is not built for the specific use of renting
 
-It is made using django framework of python.
+## User Archetypes Identified:
 
-# How to install:
+iRentStuff focuses on addressing the needs of two user archetypes identified: a. Item Owners - Individuals and/or Businesses that own items that are not frequently used 
+b. Renters - Individuals and/or Businesses who need specific items on a temporary basis
 
-1.You need to have python installed in the system.
+## How would the MVP look like/key modules in the MVP:
+- User profile and item listing
+- Search and browse feature
+- Rental booking calendar
+- Rating and review/feedback
 
-2.Need django installed in system.
-  if it is not use *pip install django* to install
-  
-3.Download repository in zip file or clone it using git (git clone https://github.com/cyclades1/Rental.git)
+## How to initialize app:
 
-4.Run system on localhost by the running the manage.py python file. (python manage.py runserver)
+pre-requistes
+- python
+- django `pip install django`
 
-# Screenshots
+To run on localhost:
+`python manage.py runserver`
 
-![Test Image 6](https://github.com/cyclades1/Rental/blob/master/images/main.png)
 
-![Test Image 6](https://github.com/cyclades1/Rental/blob/master/images/search.png)
-
-![Test Image 6](https://github.com/cyclades1/Rental/blob/master/images/about.png)
-
-![Test Image 6](https://github.com/cyclades1/Rental/blob/master/images/contact.png)
-
-![Test Image 6](https://github.com/cyclades1/Rental/blob/master/images/profile.png)
-
-![Test Image 6](https://github.com/cyclades1/Rental/blob/master/images/desc.png)
-
-# Working live project:
-  ### Check the running project over: https://cyclades.pythonanywhere.com/
+## Reference Repository:
+https://github.com/cyclades1/Rental
