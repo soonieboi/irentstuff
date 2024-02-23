@@ -1,0 +1,113 @@
+{% extends 'irentstuffapp/base.html' %}
+
+{% block content %}
+
+<div class="itmdet col-12 mx-auto p-3 b-0 m-3">
+  <div class="shadow-sm card mb-3">
+    <div class="row g-0 gx-4">
+      <div class="col-12 col-md-4">
+        <img src="/media/{{ item.image }}" class="img-fluid object-fit-cover w-100 w-sm-90 m-0 m-md-4"
+          alt="{{item.title}}">
+      </div>
+      <div class="col-md-7">
+
+        <div class="card-body">
+          <h4 class="card-title pt-2">{{item.title}}</h4>
+          <p class="card-text">
+            <span class="fs-6">Listed:</span>
+            <span class="fs-6">{{ item.created_date }}</span>
+          </p>
+
+
+          {% if is_owner %}
+          {% if not active_rental %}
+          <p class="card-text">
+            <a class="btn btn-primary px-4 my-1 d-inline " href="{% url 'add_rental' item_id=item.id %}">Create
+              Rental</a>
+          </p>
+          {% endif %}
+          {% endif %}
+
+          <p class="card-text">
+          <div class="fs-6">Rental Price (per day):</div>
+          <div class="fs-4">${{ item.price_per_day }}</div>
+          </p>
+
+          <p class="card-text">
+          <div class="fs-6">Buy Price:</div>
+          <div class="fs-4">${{ item.deposit }}</div>
+          </p>
+
+
+
+          <p class="card-text">
+            <span class="fs-6"><strong>Category:</strong></span>
+            <span class="fs-6">{{ item.category }}</span>
+          </p>
+
+          <p class="card-text">
+            <span class="fs-6"><strong>Condition:</strong></span>
+            <span class="fs-6">{{ item.condition | title }}</span>
+          </p>
+
+          <p class="card-text">
+          <div class="fs-6"><strong>Description:</strong></div>
+          <p class="card-text">{{item.description|linebreaks}}</p>
+          </p>
+
+          {% if is_owner %}
+          {% if not active_rental %}
+          <p class="card-text">
+          <form class="d-inline" method="post" action="{% url 'delete_item' item_id=item.id %}">
+            {% csrf_token %}
+            <a href="{% url 'edit_item' item_id=item.id %}"><button class="btn btn-primary d-inline"  type="button">Edit</button></a>
+            <button class="btn btn-primary d-inline" type="submit">Delete</button>
+          </form>
+          </p>
+          {% endif %}
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if active_rental %}
+
+  <div class="card mb-3">
+    <div class="row g-4">
+
+      <div class="col-md-8">
+
+        <div class="card-body">
+          <h4 class="card-title pt-2 pb-4">RENTAL</h4>
+          <p class="card-text">
+            <span class="fs-6">Start:</span>
+            <span class="fs-6">{{ active_rental.start_date }}</span>
+          </p>
+          <p class="card-text">
+            <span class="fs-6">End:</span>
+            <span class="fs-6">{{ active_rental.end_date }}</span>
+          </p>
+          <p class="card-text">
+            <span class="fs-6">Renter:</span>
+            <span class="fs-6">{{ renter.username }}</span>
+          </p>
+
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% endif %}
+  {% if is_owner %}
+  <div>
+    <a class="btn btn-primary px-4 my-1 d-inline " href="{% url 'items_list_my' %}">My stuff</a>
+  </div>
+  {% endif %}
+</div>
+
+
+
+{% endblock %}
