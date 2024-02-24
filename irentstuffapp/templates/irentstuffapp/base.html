@@ -1,0 +1,119 @@
+{%load static%}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}" /-->
+
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'apple-touch-icon.png' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon-16x16.png' %}">
+  <link rel="manifest" href="{% static 'site.webmanifest' %}">
+
+
+  <title>Items for Rent</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link href="{% static 'style.css' %}" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script defer src="https://use.fontawesome.com/releases/v6.5.1/js/all.js" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-light text-bg-danger sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand text-white" href="{% url 'home' %}">iRentStuff</a>
+
+      <div>
+        {% if user.is_authenticated %}
+        <a class="btn btn-primary mx-2 text-nowrap d-inline d-lg-none" href="{% url 'add_item' %}">Add Stuff</a>
+        {% endif %}
+     
+
+      <button class="navbar-toggler navbar-dark" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+    </div>
+      
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          {% comment %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'items_list' %}"><i class="fa-solid fa-cube px-2"></i>Stuff</a>
+          </li>
+          {% endcomment %}
+          <li>
+            <form class="d-flex px-4 pt-4 pt-lg-0">
+              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+              <button class="btn btn-outline-light " type="submit">Search</button>
+            </form>
+
+          </li>
+
+
+
+
+        </ul>
+        <ul class="d-flex navbar-nav mb-2 mb-lg-0">
+          {% if user.is_authenticated %}
+
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-white" href="#" id="navbarDropdownMenuLink" role="button"
+              data-bs-toggle="dropdown" aria-expanded="false">
+              Hello, {{user.username}}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
+              {% if user.is_authenticated %}
+              <li class="nav-item">
+                <a class="nav-link" href="#"><i class="fa-solid fa-gauge-simple px-2"></i>Dashboard</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'items_list_my' %}"><i class="fa-solid fa-cube px-2"></i>My stuff</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/logout/"><i class="fa-solid fa-right-to-bracket px-2"></i>Logout</a>
+              </li>
+              {% endif %}
+            </ul>
+          </li>
+
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link text-white" href="/login"><i class="fa-solid fa-right-to-bracket px-2"></i>Log in</a>
+          </li>
+          {% endif %}
+        </ul>
+
+        {% if user.is_authenticated %}
+        <div>
+          <a class="btn btn-primary mx-2 text-nowrap d-none d-lg-block" href="{% url 'add_item' %}">Add Stuff</a>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </nav>
+
+  {% for message in messages %}
+  <div class="alert alert-{{message.tags}} alert-dismissible fade show m-4" role="alert">
+    {{message}}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+
+  <div id="container">
+    {%block content%}
+    {%endblock%}
+
+  </div>
+</body>
+
+</html>
