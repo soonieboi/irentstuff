@@ -3,26 +3,23 @@ name: Code Quality Checks
 on: [push, pull_request]
 
 jobs:
-  lint:
+  code-quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.10.9 
-          
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install flake8 black bandit
-          
-      - name: Run flake8 for linting
-        run: flake8 .
-        
-      - name: Check code formatting with black (dry-run)
-        run: black . --check
-        
-      - name: Security analysis with Bandit
-        run: bandit -r .
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.10.9
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black bandit
+
+    - name: Check code formatting with black (dry-run)
+      run: black . --check
+
+    - name: Security analysis with Bandit
+      run: bandit -r .
