@@ -19,7 +19,7 @@ jobs:
         pip install black bandit
 
     - name: Check code formatting with black (dry-run)
-      run: black . --check
+      run: black . --check --exclude '/(env|external_libs)/'
 
     - name: Security analysis with Bandit
       run: bandit -r .
