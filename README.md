@@ -31,6 +31,7 @@ b. Renters - Individuals and/or Businesses who need specific items on a temporar
 pre-requistes
 - python
 - django `pip install django`
+- `pip install django-extensions`
 
 To run on localhost:
 `python manage.py runserver`
