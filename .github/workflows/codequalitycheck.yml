@@ -1,34 +1,34 @@
 name: Code Quality Checks, with auto-format Python code with black
 
-on: [push, pull_request]
+# on: [push, pull_request]
 
-jobs:
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v2
+# jobs:
+#   format:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Check out the code
+#         uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.10.9'
+#       - name: Set up Python
+#         uses: actions/setup-python@v2
+#         with:
+#           python-version: '3.10.9'
 
-      - name: Install black
-        run: pip install black
+#       - name: Install black
+#         run: pip install black
 
-      - name: Check code formatting
-        id: black_check
-        run: black . --check --exclude '/(env|external_libs)/' || echo "##[set-output name=is_formatted;]false"
+#       - name: Check code formatting
+#         id: black_check
+#         run: black . --check --exclude '/(env|external_libs)/' || echo "##[set-output name=is_formatted;]false"
 
-      - name: Format code with black
-        if: steps.black_check.outputs.is_formatted != 'true'
-        run: black . --exclude '/(env|external_libs)/'
+#       - name: Format code with black
+#         if: steps.black_check.outputs.is_formatted != 'true'
+#         run: black . --exclude '/(env|external_libs)/'
 
-      - name: Commit and push if changes
-        if: steps.black_check.outputs.is_formatted != 'true'
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "Apply auto-formatting with black"
-          branch: ${{ github.head_ref }}
-          file_pattern: . 
+#       - name: Commit and push if changes
+#         if: steps.black_check.outputs.is_formatted != 'true'
+#         uses: stefanzweifel/git-auto-commit-action@v4
+#         with:
+#           commit_message: "Apply auto-formatting with black"
+#           branch: ${{ github.head_ref }}
+#           file_pattern: . 
