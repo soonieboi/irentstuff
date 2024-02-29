@@ -20,22 +20,17 @@ jobs:
       run: |
         pip install -r requirements.txt
 
+    - name: Set up SSH Agent
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_KEY }}
+
     - name: Deploy to AWS EC2
       env:
-        SSH_KEY: ${{ secrets.SSH_KEY }}
         HOST: ${{ secrets.HOST }}
         USERNAME: ${{ secrets.USERNAME }}
       run: |
-        sudo apt-get update
-        sudo apt-get install -y sshpass
-        echo "${SSH_KEY}" > deploy_key
-        chmod 600 deploy_key
-        mkdir -p ~/.ssh
-        touch ~/.ssh/known_hosts
-        ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
-        scp -i deploy_key -o StrictHostKeyChecking=no ./manage.py $USERNAME@$HOST:/home/ubuntu/irentstuff
-        scp -i deploy_key -o StrictHostKeyChecking=no ./requirements.txt $USERNAME@$HOST:/home/ubuntu/irentstuff
-        ssh -i deploy_key -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
+        ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
           cd /home/ubuntu/irentstuff
           source venv/bin/activate
           pip install -r requirements.txt
