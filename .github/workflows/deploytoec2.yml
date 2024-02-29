@@ -1,4 +1,4 @@
-name: Deploy Django Application to AWS EC2
+name: Deploy Django App to AWS EC2
 
 on:
   push:
@@ -30,11 +30,13 @@ jobs:
         sudo apt-get install -y sshpass
         echo "${SSH_KEY}" > deploy_key
         chmod 600 deploy_key
+        mkdir -p ~/.ssh
+        touch ~/.ssh/known_hosts
         ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
         scp -i deploy_key -o StrictHostKeyChecking=no ./manage.py $USERNAME@$HOST:/path/to/your/django/app/your_project/settings/
         scp -i deploy_key -o StrictHostKeyChecking=no ./requirements.txt $USERNAME@$HOST:/path/to/your/django/app/
         ssh -i deploy_key -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
-          cd /path/to/your/django/app
+          cd /path/to/your/django/app 
           source venv/bin/activate
           pip install -r requirements.txt
           ./manage.py migrate
