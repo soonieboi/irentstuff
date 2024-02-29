@@ -31,8 +31,9 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
           cd /home/ubuntu/irentstuff
-          source venv/bin/activate
+          source ../venv/bin/activate
           pip install -r requirements.txt
+          chmod +x manage.py
           ./manage.py migrate
           ./manage.py collectstatic --noinput
           sudo systemctl restart gunicorn.service
