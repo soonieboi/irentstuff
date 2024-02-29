@@ -33,10 +33,10 @@ jobs:
         mkdir -p ~/.ssh
         touch ~/.ssh/known_hosts
         ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
-        scp -i deploy_key -o StrictHostKeyChecking=no ./manage.py $USERNAME@$HOST:/path/to/your/django/app/your_project/settings/
-        scp -i deploy_key -o StrictHostKeyChecking=no ./requirements.txt $USERNAME@$HOST:/path/to/your/django/app/
+        scp -i deploy_key -o StrictHostKeyChecking=no ./manage.py $USERNAME@$HOST:/home/ubuntu/irentstuff
+        scp -i deploy_key -o StrictHostKeyChecking=no ./requirements.txt $USERNAME@$HOST:/home/ubuntu/irentstuff
         ssh -i deploy_key -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
-          cd /path/to/your/django/app 
+          cd /home/ubuntu/irentstuff
           source venv/bin/activate
           pip install -r requirements.txt
           ./manage.py migrate
