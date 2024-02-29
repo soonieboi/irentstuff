@@ -1,8 +1,0 @@
-- name: Setup SSH Agent
-  uses: webfactory/ssh-agent@v0.5.3
-  with:
-    ssh-private-key: ${{ secrets.SSH_KEY }}
-
-- name: Deploy to Server
-  run: |
-    ssh -o StrictHostKeyChecking=no username@host "commands to run"
