@@ -82,37 +82,39 @@ def item_detail(request, item_id):
     renter = None
     active_rentals_obj = None
 
-    if item.owner == request.user:
-        # Check if there are active rentals for this item
-        active_rentals_obj = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
-        if active_rentals_obj:
-            renter = active_rentals_obj.renter
+    if request.user.is_authenticated:
 
-            #can cancel?
-            if active_rentals_obj.status=='pending':
-                cancel_rental = True
-            #can complete?
-            elif active_rentals_obj.status=='confirmed':
-                complete_rental = True
+        if item.owner == request.user:
+            # Check if there are active rentals for this item
+            active_rentals_obj = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
+            if active_rentals_obj:
+                renter = active_rentals_obj.renter
 
-    else:
-        # Check if there is a rental for this item related to this user
-        active_rentals_obj = Rental.objects.filter(item=item, renter = request.user).exclude(status="completed").exclude(status="cancelled").first()
-        if active_rentals_obj:
+                #can cancel?
+                if active_rentals_obj.status=='pending':
+                    cancel_rental = True
+                #can complete?
+                elif active_rentals_obj.status=='confirmed':
+                    complete_rental = True
 
-            renter = active_rentals_obj.renter
+        else:
+            # Check if there is a rental for this item related to this user
+            active_rentals_obj = Rental.objects.filter(item=item, renter = request.user).exclude(status="completed").exclude(status="cancelled").first()
+            if active_rentals_obj:
 
-            #can accept?
-            # Check if there is a rental offer for this item - pending - before start_date
-            #accept_rental_obj = active_rentals_obj.filter(status='pending', start_date__gt=timezone.now()).first()
-            #if accept_rental_obj:
-            if active_rentals_obj.status=='pending':
-                if active_rentals_obj.start_date>timezone.now().date():
-                    accept_rental = True
-                else:
-                    active_rentals_obj = None
-       
-            
+                renter = active_rentals_obj.renter
+
+                #can accept?
+                # Check if there is a rental offer for this item - pending - before start_date
+                #accept_rental_obj = active_rentals_obj.filter(status='pending', start_date__gt=timezone.now()).first()
+                #if accept_rental_obj:
+                if active_rentals_obj.status=='pending':
+                    if active_rentals_obj.start_date>timezone.now().date():
+                        accept_rental = True
+                    else:
+                        active_rentals_obj = None
+        
+                
 
 
     return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow})
