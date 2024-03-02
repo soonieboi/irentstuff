@@ -1,17 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
-from .models import Item, Rental
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives    
 from django.contrib.auth.decorators import login_required
-from .forms import ItemForm, ItemEditForm
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils import timezone 
-
+from django.db.models import Count
+from django.conf import settings
+from .models import Item, Rental, Message
+from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm
 
 
 def index(request):
@@ -21,9 +23,6 @@ def index(request):
 def items_list(request):
     # Filter items with is_available=True
     #available_items = Item.objects
-
-    
-
     # Apply additional filters based on request.GET parameters
 
     # Pagination (optional)
@@ -68,12 +67,55 @@ def add_item(request):
 def item_detail(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
     is_owner = request.user == item.owner
-    active_rental = Rental.objects.filter(item=item, end_date__gt=timezone.now()).exclude(status="completed").exclude(status="cancelled").first()
-    if active_rental:
-        renter = active_rental.renter
+    msgshow = True
+
+    if is_owner:
+        #check if there are any messages related to this item
+        item_messages = Message.objects.filter(item=item)
+        if not item_messages:
+            msgshow = False
+
+    active_rental = False
+    accept_rental = False
+    cancel_rental = False
+    complete_rental = False
+    renter = None
+    active_rentals_obj = None
+
+    if item.owner == request.user:
+        # Check if there are active rentals for this item
+        active_rentals_obj = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
+        if active_rentals_obj:
+            renter = active_rentals_obj.renter
+
+            #can cancel?
+            if active_rentals_obj.status=='pending':
+                cancel_rental = True
+            #can complete?
+            elif active_rentals_obj.status=='confirmed':
+                complete_rental = True
+
     else:
-        renter = None
-    return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'active_rental': active_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my'})
+        # Check if there is a rental for this item related to this user
+        active_rentals_obj = Rental.objects.filter(item=item, renter = request.user).exclude(status="completed").exclude(status="cancelled").first()
+        if active_rentals_obj:
+
+            renter = active_rentals_obj.renter
+
+            #can accept?
+            # Check if there is a rental offer for this item - pending - before start_date
+            #accept_rental_obj = active_rentals_obj.filter(status='pending', start_date__gt=timezone.now()).first()
+            #if accept_rental_obj:
+            if active_rentals_obj.status=='pending':
+                if active_rentals_obj.start_date>timezone.now().date():
+                    accept_rental = True
+                else:
+                    active_rentals_obj = None
+       
+            
+
+
+    return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow})
 
 def edit_item(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
@@ -105,16 +147,95 @@ def delete_item(request, item_id):
     item.delete()
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
-# myrentalapp/views.py
 
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Item, Rental
-from .forms import RentalForm
+@login_required
+def item_messages(request, item_id, userid=0):
 
-def add_rental(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
-
     
+    #owner view of messages from every user who enquired
+    if userid == 0 and item.owner == request.user:
+
+        # Group messages by enquiring_user_id and count the number of messages for each user
+        grouped_messages = Message.objects.filter(item=item).values('enquiring_user','enquiring_user__username').annotate(message_count=Count('id'))
+
+        return render(request, 'irentstuffapp/item_messages_list.html', {'item': item, 'grouped_messages': grouped_messages})
+    
+    else:
+
+        #enquiring_user = User.objects.filter(id=userid).first()
+
+        if item.owner == request.user:
+            enquiring_user = User.objects.filter(id=userid).first()
+        else:
+            enquiring_user = request.user
+        
+        if request.method == 'POST':
+            message_form = MessageForm(request.POST)
+            if message_form.is_valid():
+                print('valid')
+                message = message_form.save(commit=False)
+                message.sender = request.user
+                if request.user == item.owner:
+                    message.recipient = enquiring_user
+                else:
+                    message.recipient = item.owner
+
+                message.item = item
+                message.enquiring_user = enquiring_user
+                message.subject = 'message'
+                message.timestamp = timezone.now()
+                message.save()
+
+                if request.user == item.owner: 
+                    return redirect('item_messages', item_id=item.id, userid=enquiring_user.id)
+                    
+                else:
+                    return redirect('item_messages_list', item_id=item.id)
+
+                #messages.success(request, 'Rental added successfully!')
+                #return redirect('item_detail', item_id=item.id)
+                #return redirect(reverse('current_url_name'))
+                #return render(request, 'irentstuffapp/item_messages.html', {'item': item, 'enquiring_user':enquiring_user.username,'item_messages': item_messages, 'message_form': message_form})
+
+                #item_messages = Message.objects.filter(item=item, enquiring_user = userid).order_by('timestamp')
+
+                #return render(request, 'irentstuffapp/item_messages.html', {'item': item, 'enquiring_user':enquiring_user.username,'item_messages': item_messages, 'message_form': message_form})
+        else:
+            message_form = MessageForm(initial={'item': item, 'recipient': item.owner})
+
+        #set messages to is_read
+        item_incoming_msgs = Message.objects.filter(item=item, enquiring_user = enquiring_user, is_read = False).exclude(sender = request.user.id)
+        for itmmsg in item_incoming_msgs:
+            itmmsg.is_read = True
+            itmmsg.save()
+
+        active_rentals = False
+        accept_rental = False
+        if item.owner == request.user:
+            # Check if there are active rentals for this item
+            active_rentals_obj = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
+            if active_rentals_obj:
+                active_rentals = True
+        else:
+            # Check if there is a rental offer for this item - pending - before start_date
+            accept_rental_obj = Rental.objects.filter(item=item, renter = request.user, status='pending', start_date__gt=timezone.now()).first()
+            if accept_rental_obj:
+                accept_rental = True
+
+        item_messages = Message.objects.filter(item=item, enquiring_user = enquiring_user).order_by('timestamp')
+        return render(request, 'irentstuffapp/item_messages.html', {'item': item, 'enquiring_user':enquiring_user.username,'item_messages': item_messages, 'message_form': message_form, 'active_rentals': active_rentals, 'accept_rental':accept_rental})
+
+@login_required
+def inbox(request):
+
+    # Group messages by enquiring_user_id and count the number of messages for each user
+    grouped_messages = Message.objects.filter(recipient = request.user.id).values('enquiring_user','enquiring_user__username','item__id', 'item__title').annotate(message_count=Count('id'))
+
+    return render(request, 'irentstuffapp/inbox.html', {'grouped_messages': grouped_messages})
+
+def add_rental(request, item_id, username=""):
+    item = get_object_or_404(Item, pk=item_id)
 
     # Check if the logged-in user is the creator of the item
     if request.user != item.owner:
@@ -124,10 +245,8 @@ def add_rental(request, item_id):
     if request.method == 'POST':
         form = RentalForm(request.POST)
         
-        
-
         # Check if there are active rentals for the item
-        active_rentals = Rental.objects.filter(item=item, end_date__gt=timezone.now()).exclude(status="completed").exclude(status="cancelled")
+        active_rentals = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled")
         if active_rentals.exists():
             messages.error(request, 'There are active rentals for this item. You cannot add a new rental.')
             return redirect('item_detail', item_id=item.id)
@@ -141,8 +260,6 @@ def add_rental(request, item_id):
         #form['status'] = 'pending'
         if form.is_valid():
 
-            print('valid')
-
             renterid = form['renterid'].value()
 
             rental = form.save(commit=False)
@@ -152,20 +269,142 @@ def add_rental(request, item_id):
             
             rental.item = item  # Set the item for the rental
             rental.owner = request.user  # Set the owner to the logged-in user
+            rental.pending_date = timezone.now()
             rental.status = 'pending' 
             
             rental.save()
+
+
+            subject = 'iRentStuff.app - You added a Rental'
+            html_message = render_to_string('emails/rental_added_email.html', {'rental': rental, 'item':item})
+            plain_message = strip_tags(html_message)
+            email_from = settings.DEFAULT_FROM_EMAIL
+
+            email = EmailMultiAlternatives(
+                subject,
+                plain_message,
+                email_from,
+                [request.user.email],
+            )
+            email.attach_alternative(html_message, "text/html")
+            email.send()
+
+            subject2 = 'iRentStuff.app - You have a Rental Offer'
+            html_message2 = render_to_string('emails/rental_added_email2.html', {'rental': rental, 'item':item})
+
+            plain_message2 = strip_tags(html_message2)
+
+            email2 = EmailMultiAlternatives(
+                subject2,
+                plain_message2,
+                email_from,
+                [rentaluser.email],
+            )
+            email2.attach_alternative(html_message2, "text/html")
+            email2.send()
+
             return redirect('item_detail', item_id=item.id)
-        else:
-            print('invalid')
+
     else:
         form = RentalForm()
-        '''form.fields['status'].initial = ['pending']
-        form.fields['owner'].initial = [request.user.id]
-        form.fields['item'].initial = [item.id]'''
+        if username:
+            form['renterid'].initial = username
         
 
     return render(request, 'irentstuffapp/rental_add.html', {'form': form, 'item': item})
+
+def accept_rental(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+
+
+    # Check if the logged-in user is renter
+    accept_rental_obj = Rental.objects.filter(item=item, renter = request.user, status='pending', start_date__gt=timezone.now()).first()
+    if accept_rental_obj:
+        accept_rental_obj.status = 'confirmed'
+        accept_rental_obj.confirm_date = timezone.now()
+        accept_rental_obj.save()
+
+        subject = 'iRentStuff.app - you have a Rental Acceptance'
+        html_message = render_to_string('emails/rental_confirmed_email.html', {'rental': accept_rental_obj, 'item':item})
+        plain_message = strip_tags(html_message)
+        email_from = settings.DEFAULT_FROM_EMAIL
+
+        email = EmailMultiAlternatives(
+            subject,
+            plain_message,
+            email_from,
+            [item.owner.email],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+
+        subject2 = 'iRentStuff.app - You accepted a Rental Offer'
+        html_message2 = render_to_string('emails/rental_confirmed_email2.html', {'rental': accept_rental_obj, 'item':item})
+
+        plain_message2 = strip_tags(html_message2)
+
+        email2 = EmailMultiAlternatives(
+            subject2,
+            plain_message2,
+            email_from,
+            [request.user.email],
+        )
+        email2.attach_alternative(html_message2, "text/html")
+        email2.send()
+
+    return redirect('item_detail', item_id=item.id)
+
+def complete_rental(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+
+    # Check if the logged-in user is owner and status is confirmed
+    complete_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='confirmed').first()
+    if complete_rental_obj:
+        complete_rental_obj.status = 'completed'
+        complete_rental_obj.complete_date = timezone.now()
+        complete_rental_obj.save()
+
+        subject = 'iRentStuff.app - you have set a rental to Complete'
+        html_message = render_to_string('emails/rental_completed_email.html', {'rental': complete_rental_obj,})
+        plain_message = strip_tags(html_message)
+        email_from = settings.DEFAULT_FROM_EMAIL
+
+        email = EmailMultiAlternatives(
+            subject,
+            plain_message,
+            email_from,
+            [item.owner.email],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+
+    return redirect('item_detail', item_id=item.id)
+
+def cancel_rental(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+
+    # Check if the logged-in user is owner and status is confirmed
+    cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='pending').first()
+    if cancel_rental_obj:
+        cancel_rental_obj.status = 'cancelled'
+        cancel_rental_obj.cancelled_date = timezone.now()
+        cancel_rental_obj.save()
+
+        subject = 'iRentStuff.app - you have cancelled a rental'
+        html_message = render_to_string('emails/rental_cancelled_email.html', {'rental': cancel_rental_obj,})
+        plain_message = strip_tags(html_message)
+        email_from = settings.DEFAULT_FROM_EMAIL
+
+        email = EmailMultiAlternatives(
+            subject,
+            plain_message,
+            email_from,
+            [item.owner.email],
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+
+    return redirect('item_detail', item_id=item.id)
 
 def check_user_exists(request, username):
     user_exists = User.objects.filter(username=username).exists()
@@ -188,29 +427,23 @@ def register(request):
             user.save()
 
             subject = 'Welcome to iRentStuff.app - Your Account Registration is Successful!'
-
             html_message = render_to_string('emails/welcome_email.html', {'user_name': username})
             plain_message = strip_tags(html_message)
-
-            #message = render_to_string('emails/welcome_email.txt', {'user_name': username})
-            #message = f'Hi, welcome to iRentStuff. Thank you for joining us!'
-            #plain_message = strip_tags(message)
-
-            email_from = 'admin@irentstuff.app' 
+            email_from = settings.DEFAULT_FROM_EMAIL
 
             email = EmailMultiAlternatives(
                 subject,
                 plain_message,
-                email_from,  # Replace with your "from" email address
+                email_from,
                 [email],
             )
-            #email.content_subtype = 'html'  # Set the content type to HTML
             email.attach_alternative(html_message, "text/html")
             email.send()
 
             messages.success(request, 'Thank you for your registration! You may log in now')
             return redirect('/login')
     return render(request,'irentstuffapp/register.html')
+
 
 def login_user(request):
     if request.method=='POST':

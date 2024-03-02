@@ -123,6 +123,8 @@ STATIC_URL = 'static/'
 #STATIC_ROOT = '/home/static/'
 #STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
+#STATIC_ROOT = '/Users/calvin/Dropbox/suss/adles backup/20230603mod/static/briles/'
+
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
@@ -145,7 +147,9 @@ EMAIL_FILE_PATH = 'tmp/email-messages/'
 EMAIL_HOST='smtp.gmail.com'
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
-EMAIL_HOST_USER='irentstuffadmin@gmail.com'
+EMAIL_HOST_USER='irentstuffadmin0@gmail.com'
 EMAIL_HOST_PASSWORD='xxxxxxxxxx'
-DEFAULT_FROM_EMAIL="irentstuffadmin@gmail.com"
+
 '''
+
+DEFAULT_FROM_EMAIL="admin@irentstuff.app"

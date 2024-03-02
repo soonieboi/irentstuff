@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Item, Rental
+from .models import Item, Rental, Message
 from django.utils import timezone 
 from django.contrib.auth.forms import UserChangeForm
 
@@ -59,7 +59,12 @@ class RentalForm(forms.ModelForm):
 
         return cleaned_data
 
+class MessageForm(forms.ModelForm):
 
+    # Override the content field to use TextInput
+    content = forms.CharField(label='', widget=forms.TextInput(attrs={'class': 'form-control border border-secondary'}))
 
+    class Meta:
+        model = Message
+        fields = ['content']
 
-    

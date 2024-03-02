@@ -1,3 +1,19 @@
+.vh-55 {
+    height: 55vh;
+}
+
+.vh-60 {
+    height: 60vh;
+}
+
+.v-70 {
+    width: 70%;
+}
+
+#msgcont {
+    display: flex;
+    flex-direction: column-reverse;
+}
 
 .itm a {
     color: #428BCA;
@@ -6,6 +22,13 @@
 
 .itm a:hover,
 .itm a:focus {
+    text-decoration: none;
+}
+
+.msglist {
+    text-decoration: none;
+}
+.msglist:link, .msglist:visited, .msglist:hover, .msglist:active{
     text-decoration: none;
 }
 

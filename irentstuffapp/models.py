@@ -29,11 +29,15 @@ class Rental(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     start_date = models.DateField()
     end_date = models.DateField()
+    pending_date = models.DateTimeField(blank=True, null=True)
+    confirm_date = models.DateTimeField(blank=True, null=True)
+    complete_date = models.DateTimeField(blank=True, null=True)
+    cancelled_date = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=255, choices=[('pending', 'Pending'), ('confirmed', 'Confirmed'), ('completed', 'Completed'), ('cancelled', 'Cancelled')])
     # You can add additional fields like rating, payment details, etc.
 
     def __str__(self):
-        return self.item
+        return f'{self.item} ({self.owner}, {self.renter}): {self.start_date} - {self.end_date}'
 
 class Review(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -44,3 +48,18 @@ class Review(models.Model):
 
     def __str__(self):
         return self.comment
+
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    recipient = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, related_name='messages', on_delete=models.CASCADE)
+    enquiring_user = models.ForeignKey(User, related_name='enquiring_messages', on_delete=models.CASCADE)
+    subject = models.CharField(max_length=255)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'{self.subject} - {self.sender} to {self.recipient} about {self.item.title} ({self.enquiring_user.username})'
+
