@@ -3,29 +3,27 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  flake8:
+  continuous_integration:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v4
+
     - name: Set up Python 3.10.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.10.9
+
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8
+        pip install flake8 pytest
+
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=./env,./venv,./other_directories_to_exclude
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=./env,./venv,./other_directories_to_exclude
-  unittest:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install Dependencies
-      run: |
-        pip install pytest
+
     - name: Run Unit Tests
       run: |
         pytest
