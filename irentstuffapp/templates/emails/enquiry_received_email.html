@@ -39,13 +39,13 @@
 
 <div class="container">
     <h1>Enquiry Received</h1>
-    <p>Hello {{ username }},</p>
+    <p>Hello {{ message.recipient }},</p>
     
-    <p>{{ enquiringuser }} has sent you a message regardng the item "{{itemname}}".</p>
+    <p>{{ message.sender }} has sent you a message regardng the item "{{message.item}}".</p>
 
-    <p>{{ message }}".</p>
+    <p>Message: {{ message.content }}</p>
 
-    <p>More details are available at: <a href="https://irentstuff.app{% url 'item_messages_list' item_id=item.id %}">https://irentstuff.app{% url 'item_messages_list' item_id=item.id %}</a></p>
+    <p>More details are available at: <a href="https://irentstuff.app{% url 'item_messages_list' item_id=message.item_id %}">https://irentstuff.app{% url 'item_messages_list' item_id=message.item_id %}</a></p>
     
     <p>If you ever have questions or need assistance, our support team is here to help. Feel free to reach out to admin@iRentStuff.app.</p>
     

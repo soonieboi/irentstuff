@@ -189,6 +189,21 @@ def item_messages(request, item_id, userid=0):
                 message.timestamp = timezone.now()
                 message.save()
 
+                subject = 'iRentStuff.app - You have a message'
+                html_message = render_to_string('emails/enquiry_received_email.html', {'message': message})
+                plain_message = strip_tags(html_message)
+                email_from = settings.DEFAULT_FROM_EMAIL
+
+                email = EmailMultiAlternatives(
+                    subject,
+                    plain_message,
+                    email_from,
+                    [message.recipient.email],
+                )
+                email.attach_alternative(html_message, "text/html")
+                email.send()
+
+
                 if request.user == item.owner: 
                     return redirect('item_messages', item_id=item.id, userid=enquiring_user.id)
                     
