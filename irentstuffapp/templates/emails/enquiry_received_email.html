@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enquiry Received Notification</title>
+    <style>
+        /* Add your email styles here */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            color: #555;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Enquiry Received</h1>
+    <p>Hello {{ username }},</p>
+    
+    <p>{{ enquiringuser }} has sent you a message regardng the item "{{itemname}}".</p>
+
+    <p>{{ message }}".</p>
+
+    <p>More details are available at: <a href="https://irentstuff.app{% url 'item_messages_list' item_id=item.id %}">https://irentstuff.app{% url 'item_messages_list' item_id=item.id %}</a></p>
+    
+    <p>If you ever have questions or need assistance, our support team is here to help. Feel free to reach out to admin@iRentStuff.app.</p>
+    
+    <p>Best regards,<br>
+    The iRentStuff.app Team</p>
+</div>
+
+</body>
+</html>

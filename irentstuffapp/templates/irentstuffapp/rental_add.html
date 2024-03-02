@@ -1,0 +1,55 @@
+{% extends 'irentstuffapp/base.html' %}
+
+{% block content %}
+
+
+<center>
+  <h1 class="p-4">Create Rental for {{item.title}}</h1>
+</center>
+<script>
+
+  $(function() {
+      // Use date picker for start and end dates
+      $("#id_start_date").datepicker();
+      $("#id_end_date").datepicker();
+  });
+</script>
+
+    <form class="shadow-sm bg-light col-11 col-sm-8 mx-auto card p-3 b-0" method="post">
+        {% csrf_token %}
+        {{ form }}
+        <button class="btn btn-primary col-md-3 my-4" type="submit">Create</button>
+        
+    </form>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+          const renterInput = document.querySelector('.autocomplete');
+    
+          renterInput.addEventListener('blur', async function () {
+              const username = renterInput.value.trim();
+              if (username !== '') {
+                  const response = await fetch(`/check_user_exists/${username}/`);
+                  const data = await response.json();
+    
+                  if (data.exists) {
+                      //alert('User exists!');
+                      // You can add additional logic or feedback here if needed
+                      if (username == "{{ user.get_username }}") {
+                        alert('You cannot rent your own item');
+                        renterInput.value = "";
+                      }
+                  } 
+                  else {
+                      alert('User does not exist!');
+                      renterInput.value = "";
+                      // You can add additional logic or feedback here if needed
+                  }
+              }
+          });
+      });
+    </script>
+
+
+
+{% endblock %}

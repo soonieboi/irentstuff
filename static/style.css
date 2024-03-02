@@ -1,0 +1,68 @@
+.vh-55 {
+    height: 55vh;
+}
+
+.vh-60 {
+    height: 60vh;
+}
+
+.v-70 {
+    width: 70%;
+}
+
+#msgcont {
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.itm a {
+    color: #428BCA;
+    text-decoration: none;
+}
+
+.itm a:hover,
+.itm a:focus {
+    text-decoration: none;
+}
+
+.msglist {
+    text-decoration: none;
+}
+.msglist:link, .msglist:visited, .msglist:hover, .msglist:active{
+    text-decoration: none;
+}
+
+.itm .card-img-top {
+    height: 20vw;
+}
+.itmdet img {
+    height: 30vw;
+}
+
+.itm .card:hover {
+
+    -webkit-transform: scale(1.02);
+    -ms-transform: scale(1.02);
+    transform: scale(1.02);
+    transition: 0.3s ease;
+
+    box-shadow: 0px 0px 15px -4px rgba(0, 0, 0, 0.3);
+    -webkit-box-shadow: 0px 0px 15px -4px rgba(0, 0, 0, 0.3);
+    -moz-box-shadow: 0px 0px 15px -4px rgba(0, 0, 0, 0.3);
+}
+
+.ui-datepicker {
+    font-size: 12px;
+}
+
+@media screen and (min-width: 1200px) {
+    .itm .card-img-top {
+        height: 14vw;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .itm .card-img-top {
+        height: 50vw;
+    }
+}

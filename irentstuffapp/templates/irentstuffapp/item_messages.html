@@ -1,0 +1,72 @@
+{% extends 'irentstuffapp/base.html' %}
+
+{% block content %}
+
+<div class="col-11 col-sm-10 mx-auto d-grid  d-flex justify-content-between bg-primary mt-4 p-2">
+  <a class="msglist align-middle text-white py-1 px-4" href="{% url 'item_detail' item_id=item.id %}">{{ item.title|truncatechars:65 }}</a>
+  {% if item.owner == request.user %}
+  {% if not active_rentals %}
+  <a class="btn btn-light p-1 px-2" type="button"
+    href="{% url 'add_rental' item_id=item.id username=enquiring_user %}">Create Rental</a>
+  {% endif %}
+  {% endif %}
+</div>
+
+{% if not item.owner == request.user %}
+  {% if accept_rental %}
+<div class="col-11 col-sm-10 mx-auto d-grid  d-flex justify-content-between bg-warning m-0 p-2">
+  <span class="msglist align-middle text-white py-1 px-4">You have a rental offer!</span><a class="btn btn-light p-1 px-2" type="button"
+    href="{% url 'item_detail' item_id=item.id %}#acceptrental">Check it out</a>
+</div>
+{% endif %}
+{% endif %}
+
+{% if item_messages %}
+<div id="msgcont" class="shadow-sm bg-light col-11 col-sm-10 mx-auto p-3 b-0 vh-55 overflow-scroll">
+  <ul class="list-group p-0 m-0">
+    {% for message in item_messages %}
+
+    {% if message.sender.id == request.user.id %}
+
+    <li class="align-self-end list-group-item m-1 bg-success text-white rounded v-70">
+      <div>{{ message.content }}</div>
+      {% else %}
+    <li class="list-group-item m-1 align-items-start rounded v-70">
+      <div class="text-success"><strong></strong>{{ message.sender.username }}</strong></div>
+      <div>{{ message.content }}</div>
+
+      {% endif %}
+      <div class="text-end align-self-end pt-2 small">{{ message.timestamp |date:"d M Y" }}
+        {{message.timestamp|time:"h:i a"}}</div>
+      {% endfor %}
+  </ul>
+</div>
+{% else %}
+<div class="shadow-sm bg-light col-11 col-sm-10 mx-auto card p-3 b-0 vh-55 overflow-scroll">
+  <div class="small">
+    <p>No messages</p>
+  </div>
+</div>
+{% endif %}
+
+<form method="post" class="col-11 col-sm-10 mx-auto p-3 b-0 ">
+  {% csrf_token %}
+
+
+  <div class="input-group mb-3">
+    {{ message_form }}
+    <button class="btn btn-outline-secondary" type="submit"><i class="fa-solid fa-circle-arrow-right"></i></button>
+  </div>
+
+</form>
+<script>
+  // Function to refresh the page
+  function refreshPage() {
+    location.reload();
+  }
+
+  // Set the interval for refreshing (30 seconds = 30000 milliseconds)
+  setInterval(refreshPage, 30000);
+</script>
+
+{% endblock %}

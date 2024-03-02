@@ -1,0 +1,49 @@
+{% extends 'irentstuffapp/base.html' %}
+
+{% block content %}
+<div class="row p-2 w-98 m-0">
+  
+  {% if mystuff %}
+  <h3 class="pt-3 pb-2">MY STUFF</h3>
+  {% endif %}
+
+  {% if no_items_message %}
+        <p>{{ no_items_message }}</p>
+  {% else %}
+
+  {% for item in items %}
+  <!-- {{ package|pprint }} -->
+  
+
+  <div class="itm col-xl-2 col-md-3 col-sm-6 p-2">
+    <a href="{% url 'item_detail' item_id=item.id %}">
+      <div class="card card-common h-100 hover-shadow">
+        {% if item.image != "" %}
+        <img src="/media/{{ item.image }}" class="card-img-top img-fluid object-fit-cover " />
+
+
+        {% endif %}
+        <div class="card-body pb-0">
+          <h6 class="card-title small">{{item.title|truncatechars:65}}</h6>
+        </div>
+        <div class="card-footer border-0 bg-white pt-0 pb-4">
+          <div class="card-text pb-2">
+            <div class="small">Rental Price (per day):</div>
+            <div class="fs-5">${{ item.price_per_day }}</div>
+          </div>
+          <div class="card-text">
+            <div class="small">Buy Price:</div>
+            <div class="fs-6">${{ item.deposit }}</div>
+          </div>
+
+        </div>
+
+      </div>
+    </a>
+  </div>
+
+  {% endfor %}
+
+  {% endif %}
+</div>
+{% endblock %}
