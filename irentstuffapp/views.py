@@ -53,7 +53,7 @@ def items_list(request):
     else:
         no_items_message = None
 
-    return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': no_items_message, 'mystuff': request.resolver_match.url_name == 'items_list_my'})
+    return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': no_items_message, 'searchstr':search_query, 'mystuff': request.resolver_match.url_name == 'items_list_my'})
 
 def add_item(request):
     if request.method == 'POST':

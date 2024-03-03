@@ -7,6 +7,10 @@
   <h3 class="pt-3 pb-2">MY STUFF</h3>
   {% endif %}
 
+  {% if searchstr %}
+  <h3 class="pt-3 pb-2">Searching for {{searchstr}}</h3>
+  {% endif %}
+
   {% if no_items_message %}
   <div class="itmdet col-12 mx-auto p-3 b-0 m-3">
     <div class="shadow-sm card mb-3">
