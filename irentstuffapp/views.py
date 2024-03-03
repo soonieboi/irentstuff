@@ -12,8 +12,8 @@ from django.utils.html import strip_tags
 from django.utils import timezone 
 from django.db.models import Count
 from django.conf import settings
-from .models import Item, Rental, Message
-from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm
+from .models import Item, Rental, Message, Review
+from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
 
 
 def index(request):
@@ -55,6 +55,7 @@ def items_list(request):
 
     return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': no_items_message, 'searchstr':search_query, 'mystuff': request.resolver_match.url_name == 'items_list_my'})
 
+@login_required
 def add_item(request):
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES)
@@ -69,8 +70,26 @@ def add_item(request):
 
     return render(request, 'irentstuffapp/item_add.html', {'form': form})
 
+@login_required
+def add_review(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+    user = request.user
+    form = ItemReviewForm(user, item, request.POST or None)
+    
+    if request.method == 'POST':
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.author = user
+            review.created_date = timezone.now()
+            review.save()
+            
+            return redirect('item_detail', item_id=item_id)  # Redirect to item detail page
+
+    return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item':item})
+
 def item_detail(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
+    reviews = Review.objects.filter(rental__item=item)
     is_owner = request.user == item.owner
     msgshow = True
 
@@ -86,6 +105,7 @@ def item_detail(request, item_id):
     complete_rental = False
     renter = None
     active_rentals_obj = None
+    make_review = False
 
     if request.user.is_authenticated:
 
@@ -118,12 +138,17 @@ def item_detail(request, item_id):
                         accept_rental = True
                     else:
                         active_rentals_obj = None
-        
+
+            #check if there are any completed rentals that user may want to review
+            review_obj =  Rental.objects.filter(renter=request.user, item=item, status='completed')
+            if review_obj:
+                make_review = True
                 
 
 
-    return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow})
+    return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews})
 
+@login_required
 def edit_item(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
     
@@ -142,6 +167,7 @@ def edit_item(request, item_id):
 
     return render(request, 'irentstuffapp/item_edit.html', {'item': item, 'form': form})
 
+@login_required
 def delete_item(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
 
@@ -256,6 +282,7 @@ def inbox(request):
 
     return render(request, 'irentstuffapp/inbox.html', {'grouped_messages': grouped_messages})
 
+@login_required
 def add_rental(request, item_id, username=""):
     item = get_object_or_404(Item, pk=item_id)
 
@@ -335,6 +362,7 @@ def add_rental(request, item_id, username=""):
 
     return render(request, 'irentstuffapp/rental_add.html', {'form': form, 'item': item})
 
+@login_required
 def accept_rental(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
 
@@ -376,6 +404,7 @@ def accept_rental(request, item_id):
 
     return redirect('item_detail', item_id=item.id)
 
+@login_required
 def complete_rental(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
 
@@ -402,6 +431,7 @@ def complete_rental(request, item_id):
 
     return redirect('item_detail', item_id=item.id)
 
+@login_required
 def cancel_rental(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
 
@@ -480,6 +510,7 @@ def login_user(request):
             return redirect('login')
     return render(request,'irentstuffapp/login.html')
 
+@login_required
 def logout_user(request):
     logout(request)
     return redirect('/')
