@@ -13,9 +13,8 @@ class Item(models.Model):
     created_date = models.DateTimeField(blank=True)
     deleted_date = models.DateTimeField(blank=True, null=True)
 
-
-    def __str__(self):
-        return self.title
+    # def __str__(self):
+    #     return self.title 
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
@@ -32,8 +31,9 @@ class Rental(models.Model):
     status = models.CharField(max_length=255, choices=[('pending', 'Pending'), ('confirmed', 'Confirmed'), ('completed', 'Completed'), ('cancelled', 'Cancelled')])
     # You can add additional fields like rating, payment details, etc.
 
-    def __str__(self):
-        return self.item
+    # def __str__(self):
+    #     list_of_traits = [self.item.title, self.item.description, str(self.item.price_per_day)]
+    #     return ",   ".join(list_of_traits)
 
 class Review(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
