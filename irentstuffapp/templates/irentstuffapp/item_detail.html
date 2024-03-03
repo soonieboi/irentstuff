@@ -22,8 +22,7 @@
 
         {% if msgshow %}
         <div class="m-2 my-4"">
-            <a class=" btn btn-primary px-4 m-md-4 my-1 d-inline " href=" {% url 'item_messages_list' item_id=item.id
-          %}">
+            <a class=" btn btn-primary px-4 m-md-4 my-1 d-inline " href=" {% url 'item_messages_list' item_id=item.id %}">
           {% if is_owner %}
           See Messages
           {% else %}
