@@ -8,3 +8,4 @@ db.sqlite3
 tmp/
 irentstuff/settings.py
 settings.py
+*.pyc
