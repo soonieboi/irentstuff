@@ -35,6 +35,8 @@ def items_list(request):
         serializer = ItemSerializer(page_obj.object_list, many=True)
     '''
 
+    search_query = request.GET.get('search', '')
+
     if request.user.is_authenticated:
         if request.resolver_match.url_name == 'items_list_my':
             items = Item.objects.filter(owner=request.user.id).all()
@@ -43,8 +45,11 @@ def items_list(request):
     else:
         items = Item.objects.all() 
 
+    if search_query:
+        items = items.filter(title__contains=search_query).all()
+
     if not items:
-        no_items_message = 'You have no items.'
+        no_items_message = True
     else:
         no_items_message = None
 
