@@ -13,10 +13,6 @@ class Item(models.Model):
     created_date = models.DateTimeField(blank=True)
     deleted_date = models.DateTimeField(blank=True, null=True)
 
-
-    def __str__(self):
-        return self.title
-
 class Category(models.Model):
     name = models.CharField(max_length=255)
 
