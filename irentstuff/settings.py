@@ -16,6 +16,7 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECURE_CROSS_ORIGIN_OPENER_POLICY=None
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -26,7 +27,7 @@ SECRET_KEY = 'django-insecure-y4hbqokf$0o_oggjf2a#g2aatrn##!2@pu(pm!xth1z%+iwp6l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['18.141.119.189','irentstuff.app']
 
 
 # Application definition
@@ -39,7 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +53,10 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'irentstuff.urls'
+CSRF_TRUSTED_ORIGINS = ['http://*', 'http://18.141.119.189', 'http://18.141.119.189/*', 'https://*', 'https://irentstuff.app']
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
 
 TEMPLATES = [
     {
@@ -126,7 +130,7 @@ STATIC_URL = 'static/'
 #STATIC_ROOT = '/Users/calvin/Dropbox/suss/adles backup/20230603mod/static/briles/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+   BASE_DIR / "static",
 ]
 
 #BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -140,16 +144,15 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = 'tmp/email-messages/'
+#EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+#EMAIL_FILE_PATH = 'tmp/email-messages/'
 
-'''EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST='smtp.gmail.com'
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER='irentstuffadmin0@gmail.com'
-EMAIL_HOST_PASSWORD='xxxxxxxxxx'
-
-'''
-
+EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.zoho.com'
+EMAIL_HOST_USER = 'admin@irentstuff.app'
+EMAIL_HOST_PASSWORD = 'R4P2k2jAKhSr'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL="admin@irentstuff.app"
+
