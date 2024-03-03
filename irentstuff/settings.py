@@ -118,14 +118,13 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
 
-#STATIC_ROOT = '/home/static/'
-#STATIC_ROOT = os.path.join(BASE_DIR, "static")
+STATIC_ROOT = '/home/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 #STATIC_ROOT = '/Users/calvin/Dropbox/suss/adles backup/20230603mod/static/briles/'
 
@@ -155,4 +154,3 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL="admin@irentstuff.app"
-
