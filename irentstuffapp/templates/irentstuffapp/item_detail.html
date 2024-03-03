@@ -8,6 +8,7 @@
       <div class="col-12 col-md-4">
         <img src="/media/{{ item.image }}" class="img-fluid object-fit-cover w-100 w-sm-90 m-0 m-md-4"
           alt="{{item.title}}">
+          {% if user.is_authenticated %}
           {% if msgshow %}
           <div class="m-2 my-4"">
             <a class="btn btn-primary px-4 m-md-4 my-1 d-inline " href="{% url 'item_messages_list' item_id=item.id %}">
@@ -18,6 +19,7 @@
               {% endif %}
             </a>
           </div>
+          {% endif %}
           {% endif %}
       </div>
       <div class="col-md-7">
