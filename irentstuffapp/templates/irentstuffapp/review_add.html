@@ -1,0 +1,36 @@
+{% extends 'irentstuffapp/base.html' %}
+
+{% block content %}
+
+
+<center>
+  <h1 class="p-4">Create Rental for {{item.title}}</h1>
+</center>
+<script>
+
+  $(function () {
+    // Use date picker for start and end dates
+    $("#id_start_date").datepicker();
+    $("#id_end_date").datepicker();
+  });
+</script>
+
+<form class="shadow-sm bg-light col-11 col-sm-8 mx-auto card p-3 b-0" method="post">
+  {% csrf_token %}
+
+  {{ form.rental.label_tag }}
+  {{ form.rental }}
+
+  <label for="rating">Rating:</label>
+  {{ form.rating }}
+
+  <label for="comment">Comment:</label>
+  {{ form.comment }}
+
+  <button class="btn btn-primary col-md-3 my-4" type="submit">Submit Review</button>
+
+
+</form>
+
+
+{% endblock %}
