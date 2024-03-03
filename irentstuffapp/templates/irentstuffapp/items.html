@@ -7,8 +7,20 @@
   <h3 class="pt-3 pb-2">MY STUFF</h3>
   {% endif %}
 
+  {% if searchstr %}
+  <h3 class="pt-3 pb-2">Searching for {{searchstr}}</h3>
+  {% endif %}
+
   {% if no_items_message %}
-        <p>{{ no_items_message }}</p>
+  <div class="itmdet col-12 mx-auto p-3 b-0 m-3">
+    <div class="shadow-sm card mb-3">
+      <div class="row g-0 gx-4">
+        <div class="col-12 col-md-4">
+        <p class="card-text m-4 mb-0" >No items found</p>
+        <a class="card-text btn btn-primary m-4" href="{% url 'items_list' %}">Check out other stuff</a>
+      </div>
+    </div>
+  </div>
   {% else %}
 
   {% for item in items %}

@@ -1,0 +1,37 @@
+{% extends 'irentstuffapp/base.html' %}
+
+{% block content %}
+
+
+<center>
+  <h3 class="p-4">Messages for {{ item.title|truncatechars:65 }}</h3>
+</center>
+
+
+
+{% if grouped_messages %}
+<div class="shadow-sm bg-light col-11 col-sm-10 mx-auto card p-3 b-0 vh-55 overflow-scroll">
+  <ul class="list-group p-0 m-0">
+    {% for group in grouped_messages %}
+
+    <a class="msglist" href="{% url 'item_messages' item_id=item.id userid=group.enquiring_user %}">
+      <li class="list-group-item align-items-start" role="button">
+        <span class="text-dark px-4"><strong>{{ group.enquiring_user__username }}</strong></span><span
+          class="badge rounded-pill bg-primary">{{ group.message_count }}</span>
+      </li>
+    </a>
+
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
+<div class="shadow-sm bg-light col-11 col-sm-10 mx-auto card p-3 b-0 vh-55 overflow-scroll">
+  <div class="small">
+    <p>No messages</p>
+  </div>
+</div>
+{% endif %}
+
+
+
+{% endblock %}

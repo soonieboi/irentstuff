@@ -8,6 +8,19 @@
       <div class="col-12 col-md-4">
         <img src="/media/{{ item.image }}" class="img-fluid object-fit-cover w-100 w-sm-90 m-0 m-md-4"
           alt="{{item.title}}">
+          {% if user.is_authenticated %}
+          {% if msgshow %}
+          <div class="m-2 my-4"">
+            <a class="btn btn-primary px-4 m-md-4 my-1 d-inline " href="{% url 'item_messages_list' item_id=item.id %}">
+              {% if is_owner %}
+              See Messages
+              {% else %}
+              Enquire
+              {% endif %}
+            </a>
+          </div>
+          {% endif %}
+          {% endif %}
       </div>
       <div class="col-md-7">
 
@@ -89,13 +102,46 @@
             <span class="fs-6">End:</span>
             <span class="fs-6">{{ active_rental.end_date }}</span>
           </p>
+          {% if is_owner %}
           <p class="card-text">
             <span class="fs-6">Renter:</span>
             <span class="fs-6">{{ renter.username }}</span>
           </p>
+          <p class="card-text">
+            <span class="fs-6">Status:</span>
+            <span class="fs-6">{{ active_rental.get_status_display }}</span>
+          </p>
+          {% endif %}
 
           </p>
         </div>
+        {% if complete_rental %}
+        <div class="card-footer bg-white border-0">
+        <form class="d-inline" method="post" action="{% url 'complete_rental' item_id=item.id %}">
+          {% csrf_token %}
+          <button id="complete_rental" class="btn btn-primary d-inline mb-2" type="submit">Complete Rental</button>
+        </form>
+      </div>
+      {% endif %}
+      {% if cancel_rental %}
+        <div class="card-footer bg-white border-0">
+        <form class="d-inline" method="post" action="{% url 'cancel_rental' item_id=item.id %}">
+          {% csrf_token %}
+          <button id="cancel_rental" class="btn btn-primary d-inline mb-2" type="submit">Cancel Rental</button>
+        </form>
+      </div>
+      {% endif %}
+        {% if accept_rental %}
+        <div class="card-footer bg-white border-0">
+        <form class="d-inline" method="post" action="{% url 'accept_rental' item_id=item.id %}">
+          {% csrf_token %}
+          <div class="mb-2">You have a rental offer for this item!</div>
+          <button id="acceptrental" class="btn btn-primary d-inline mb-2" type="submit">Accept Rental</button>
+        </form>
+      </div>
+      {% endif %}
+
+
       </div>
     </div>
   </div>
