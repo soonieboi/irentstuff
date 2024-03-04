@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
+from .models import Item, Rental
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -14,6 +15,10 @@ from django.db.models import Count
 from django.conf import settings
 from .models import Item, Rental, Message
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.utils import timezone 
+
 
 
 def index(request):
@@ -443,7 +448,6 @@ def register(request):
             messages.success(request, 'Thank you for your registration! You may log in now')
             return redirect('/login')
     return render(request,'irentstuffapp/register.html')
-
 
 def login_user(request):
     if request.method=='POST':
