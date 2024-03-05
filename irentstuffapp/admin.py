@@ -17,11 +17,13 @@ class RentalAdmin(admin.ModelAdmin):
     list_filter = ("status", )
     search_fields = ("item",)
 
+admin.site.register(Category)
+admin.site.register(Review)
+
+#admin.site.register(Message)
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
     list_display = ('content', 'item', 'enquiring_user','timestamp' )
     list_filter = ("item", )
     search_fields = ("content",)
 
-admin.site.register(Category)
-admin.site.register(Review)

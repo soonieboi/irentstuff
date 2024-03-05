@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Item, Rental, Message
+from .models import Item, Rental, Message, Review
 from django.utils import timezone 
 from django.contrib.auth.forms import UserChangeForm
 
@@ -25,6 +25,24 @@ class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
         fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit']
+
+class ItemReviewForm(forms.ModelForm):
+
+    
+    class Meta:
+        model = Review
+        fields = ['rental','rating','comment']
+
+    def __init__(self, user, item, *args, **kwargs):
+        super(ItemReviewForm, self).__init__(*args, **kwargs)
+        # Limit the rental choices to the ones belonging to the current user and current item
+        print(f"item: {item}")
+        self.fields['rental'].queryset = Rental.objects.filter(renter=user, item=item, status='completed')
+        self.fields['rental'].label_from_instance = self.custom_label_from_instance
+
+    def custom_label_from_instance(self, obj):
+        return f'{obj.start_date} to {obj.end_date}'
+        
 
 class RentalForm(forms.ModelForm):
 
@@ -67,5 +85,4 @@ class MessageForm(forms.ModelForm):
     class Meta:
         model = Message
         fields = ['content']
-
 

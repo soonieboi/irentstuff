@@ -8,3 +8,5 @@ db.sqlite3
 tmp/
 irentstuff/settings.py
 settings.py
+irentstuffapp/__pycache__/
+irentstuff/__pycache__/

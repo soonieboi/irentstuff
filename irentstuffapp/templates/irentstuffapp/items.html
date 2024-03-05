@@ -29,7 +29,11 @@
 
   <div class="itm col-xl-2 col-md-3 col-sm-6 p-2">
     <a href="{% url 'item_detail' item_id=item.id %}">
-      <div class="card card-common h-100 hover-shadow">
+      
+        <div class="card card-common h-100 hover-shadow">
+          <div class="card-body py-1">
+        <div class="card-text small"><strong>{{item.owner}}</strong></div>
+      </div>
         {% if item.image != "" %}
         <img src="/media/{{ item.image }}" class="card-img-top img-fluid object-fit-cover " />
 
@@ -37,6 +41,7 @@
         {% endif %}
         <div class="card-body pb-0">
           <h6 class="card-title small">{{item.title|truncatechars:65}}</h6>
+          
         </div>
         <div class="card-footer border-0 bg-white pt-0 pb-4">
           <div class="card-text pb-2">

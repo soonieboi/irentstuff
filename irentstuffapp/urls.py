@@ -18,6 +18,7 @@ urlpatterns = [
     path('stuff/<int:item_id>/add_rental/<str:username>', views.add_rental, name='add_rental'),
     path('stuff/<int:item_id>/messages/', views.item_messages, name='item_messages_list'),
     path('stuff/<int:item_id>/messages/<int:userid>', views.item_messages, name='item_messages'),
+    path('stuff/<int:item_id>/review/', views.add_review, name='add_review'),
     path('check_user_exists/<str:username>/', views.check_user_exists, name='check_user_exists'),
     path('inbox/',views.inbox, name='inbox'),
     path('register/',views.register, name='register'),
