@@ -9,31 +9,31 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10.9' 
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10.9"
 
-    - name: Install Dependencies
-      run: |
-        pip install -r requirements.txt
-
-    - name: Set up SSH Agent
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_KEY }}
-    - name: Deploy to AWS EC2
-      env:
-        HOST: ${{ secrets.HOST }}
-        USERNAME: ${{ secrets.USERNAME }}
-      run: |
-        ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
-          cd /home/ubuntu/irentstuff
-          source ../venv/bin/activate
+      - name: Install Dependencies
+        run: |
           pip install -r requirements.txt
-          chmod +x manage.py
-          ./manage.py migrate
-          sudo systemctl restart apache2.service # add restart service
-        EOF
+
+      - name: Set up SSH Agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+      - name: Deploy to AWS EC2
+        env:
+          HOST: ${{ secrets.HOST }}
+          USERNAME: ${{ secrets.USERNAME }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
+            cd /home/ubuntu/irentstuff
+            source ../venv/bin/activate
+            pip install -r requirements.txt
+            chmod +x manage.py
+            ./manage.py migrate
+            sudo systemctl restart apache2.service # add restart service
+          EOF
