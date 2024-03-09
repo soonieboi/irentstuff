@@ -26,6 +26,8 @@ b. Renters - Individuals and/or Businesses who need specific items on a temporar
 - Rental booking calendar
 - Rating and review/feedback
 
+### tab Initialize
+
 ## How to initialize app:
 
 pre-requistes
