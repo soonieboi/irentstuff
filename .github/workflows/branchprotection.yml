@@ -1,4 +1,4 @@
-name: Enforce Review Approval
+name: Master Branch Protection
 
 on:
   pull_request:
