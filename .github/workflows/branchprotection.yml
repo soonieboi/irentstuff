@@ -1,46 +1,27 @@
-name: Branch Protection
+name: Enforce Review Approval
 
 on:
-  push:
+  pull_request:
     branches:
-      - 'master' 
-      
+      - master
+
 jobs:
-  check-pull-request:
+  enforce-review-approval:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Set Branch Name
-        id: branch
-        run: echo "BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}")" >> $GITHUB_ENV
-
-      - name: Get Pull Requests
+      - name: Check Pull Request Reviews
         id: pr
         run: |
-          PR_RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open&base=${BRANCH_NAME}")
-          echo "PR_RESPONSE=$PR_RESPONSE"
-          PR_URL=$(echo "$PR_RESPONSE" | jq -r '.[0].html_url')
-          echo "PR_URL=$PR_URL" >> $GITHUB_ENV
-          if [ -z "$PR_URL" ]; then
-            echo "No open pull requests found for branch $BRANCH_NAME"
-            exit 1
-          fi
-
           APPROVED=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$PR_URL/reviews" | jq '.[] | select(.state=="APPROVED") | .user.login' | wc -l)
-          echo "APPROVED=$APPROVED" >> $GITHUB_ENV
+          echo "APPROVED=$APPROVED"
 
-      - name: Check Pull Request
+      - name: Enforce Review Approval
         run: |
-          if [[ "${APPROVED}" -ge 1 ]]; then
-            echo "Pull request is approved. Allow push."
-          else
-            echo "Pull request is not approved. Disallow push."
+          if [[ "${APPROVED}" -lt 1 ]]; then
+            echo "Pull request does not have sufficient approvals. Please ensure at least one approving review."
             exit 1
           fi
-        env:
-          BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
-          PR_URL: ${{ steps.pr.outputs.PR_URL }}
-          APPROVED: ${{ steps.pr.outputs.APPROVED }}
