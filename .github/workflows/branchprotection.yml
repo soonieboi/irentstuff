@@ -3,8 +3,8 @@ name: Branch Protection
 on:
   push:
     branches:
-      - 'master' 
-      
+      - 'master' # Adjust this to match the branch you want to protect
+
 jobs:
   check-pull-request:
     runs-on: ubuntu-latest
@@ -13,22 +13,32 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
+      - name: Set Branch Name
+        id: branch
+        run: echo "BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}")" >> $GITHUB_ENV
+
       - name: Get Pull Requests
         id: pr
         run: |
-          BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}")
-          echo "::set-output name=branch::$BRANCH_NAME"
           PR_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open&base=${BRANCH_NAME}" | jq -r '.[0].html_url')
-          echo "::set-output name=pr_url::$PR_URL"
+          echo "PR_URL=$PR_URL" >> $GITHUB_ENV
+          if [ -z "$PR_URL" ]; then
+            echo "No open pull requests found for branch $BRANCH_NAME"
+            exit 1
+          fi
+
           APPROVED=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$PR_URL/reviews" | jq '.[] | select(.state=="APPROVED") | .user.login' | wc -l)
-          echo "::set-output name=approved::$APPROVED"
+          echo "APPROVED=$APPROVED" >> $GITHUB_ENV
 
       - name: Check Pull Request
-        if: steps.pr.outputs.pr_url != 'null'
         run: |
-          if [[ ${steps.pr.outputs.approved} -ge 1 ]]; then
+          if [[ "${APPROVED}" -ge 1 ]]; then
             echo "Pull request is approved. Allow push."
           else
             echo "Pull request is not approved. Disallow push."
             exit 1
           fi
+        env:
+          BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
+          PR_URL: ${{ steps.pr.outputs.PR_URL }}
+          APPROVED: ${{ steps.pr.outputs.APPROVED }}
