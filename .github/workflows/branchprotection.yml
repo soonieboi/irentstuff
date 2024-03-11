@@ -3,7 +3,8 @@ name: Branch Protection
 on:
   push:
     branches:
-      - 'master'
+      - 'master' 
+      
 jobs:
   check-pull-request:
     runs-on: ubuntu-latest
