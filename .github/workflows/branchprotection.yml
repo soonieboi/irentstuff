@@ -1,0 +1,34 @@
+name: Branch Protection
+
+on:
+  push:
+    branches:
+      - 'master' 
+      
+jobs:
+  check-pull-request:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Get Pull Requests
+        id: pr
+        run: |
+          BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}")
+          echo "::set-output name=branch::$BRANCH_NAME"
+          PR_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open&base=${BRANCH_NAME}" | jq -r '.[0].html_url')
+          echo "::set-output name=pr_url::$PR_URL"
+          APPROVED=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$PR_URL/reviews" | jq '.[] | select(.state=="APPROVED") | .user.login' | wc -l)
+          echo "::set-output name=approved::$APPROVED"
+
+      - name: Check Pull Request
+        if: steps.pr.outputs.pr_url != 'null'
+        run: |
+          if [[ ${steps.pr.outputs.approved} -ge 1 ]]; then
+            echo "Pull request is approved. Allow push."
+          else
+            echo "Pull request is not approved. Disallow push."
+            exit 1
+          fi
