@@ -3,8 +3,7 @@ name: Branch Protection
 on:
   push:
     branches:
-      - 'master' # Adjust this to match the branch you want to protect
-
+      - 'master'
 jobs:
   check-pull-request:
     runs-on: ubuntu-latest
@@ -20,7 +19,9 @@ jobs:
       - name: Get Pull Requests
         id: pr
         run: |
-          PR_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open&base=${BRANCH_NAME}" | jq -r '.[0].html_url')
+          PR_RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?state=open&base=${BRANCH_NAME}")
+          echo "PR_RESPONSE=$PR_RESPONSE"
+          PR_URL=$(echo "$PR_RESPONSE" | jq -r '.[0].html_url')
           echo "PR_URL=$PR_URL" >> $GITHUB_ENV
           if [ -z "$PR_URL" ]; then
             echo "No open pull requests found for branch $BRANCH_NAME"
