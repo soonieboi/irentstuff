@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-y4hbqokf$0o_oggjf2a#g2aatrn##!2@pu(pm!xth1z%+iwp6l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['18.141.119.189','irentstuff.app']
+ALLOWED_HOSTS = ['18.141.119.189','127.0.0.1','irentstuff.app']
 
 
 # Application definition
@@ -155,4 +155,3 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL="admin@irentstuff.app"
-
