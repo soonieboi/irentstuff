@@ -24,6 +24,7 @@ jobs:
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
+
       - name: Deploy to AWS EC2
         env:
           HOST: ${{ secrets.HOST }}
@@ -35,5 +36,5 @@ jobs:
             pip install -r requirements.txt
             chmod +x manage.py
             ./manage.py migrate
-            sudo systemctl restart apache2.service # add restart service
+            sudo systemctl restart apache2.service
           EOF
