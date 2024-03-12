@@ -1,0 +1,27 @@
+name: Master Branch Protection
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  enforce-review-approval:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Check Pull Request Reviews
+        id: pr
+        run: |
+          APPROVED=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$PR_URL/reviews" | jq '.[] | select(.state=="APPROVED") | .user.login' | wc -l)
+          echo "APPROVED=$APPROVED"
+
+      - name: Enforce Review Approval
+        run: |
+          if [[ "${APPROVED}" -lt 1 ]]; then
+            echo "Pull request does not have sufficient approvals. Please ensure at least one approving review."
+            exit 1
+          fi
