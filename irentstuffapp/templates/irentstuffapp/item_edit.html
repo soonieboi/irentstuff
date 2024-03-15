@@ -10,7 +10,19 @@
 
     <form class="shadow-sm bg-light col-11 col-sm-8 mx-auto card p-3 b-0" method="post" action="{% url 'edit_item' item_id=item.id %}" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form }}
+        {% for field in form %}
+            <div class="form-group">
+                {{ field.label_tag }}
+                {{ field }}
+                {% if field.errors %}
+                    <div class="text-danger">
+                        {% for error in field.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
         <button class="btn btn-primary col-md-3 my-4" type="submit">Save Changes</button>
         
     </form>

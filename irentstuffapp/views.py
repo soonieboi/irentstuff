@@ -59,7 +59,7 @@ def items_list(request):
 def add_item(request):
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES)
-        if form.is_valid():
+        if form.is_valid():  
             item = form.save(commit=False)
             item.owner = request.user  # Set the item's creator to the logged-in user
             item.created_date = timezone.now() 
@@ -84,6 +84,8 @@ def add_review(request, item_id):
             review.save()
             
             return redirect('item_detail', item_id=item_id)  # Redirect to item detail page
+        else:
+            raise Exception("Your review cannot be submitted.")
 
     return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item':item})
 
@@ -138,6 +140,9 @@ def item_detail(request, item_id):
                         accept_rental = True
                     else:
                         active_rentals_obj = None
+            #to be tested, catch issue when no rental active
+            else:
+                raise Exception("No active rental found for this user.")
 
             #check if there are any completed rentals that user may want to review
             review_obj =  Rental.objects.filter(renter=request.user, item=item, status='completed')
@@ -177,7 +182,10 @@ def delete_item(request, item_id):
         return redirect('item_detail', item_id=item.id)
 
     # Delete the item
-    item.delete()
+    try: 
+        item.delete()
+    except Exception as e:
+        messages.error(request, 'Error deleting item: ' + str(e))
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 
