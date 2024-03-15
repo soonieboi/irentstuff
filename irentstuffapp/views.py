@@ -19,21 +19,18 @@ from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewFo
 def index(request):
     return HttpResponse("Index")
 
-#def get_available_items(request):
 def items_list(request):
     # Filter items with is_available=True
-    #available_items = Item.objects
+    available_items = Item.objects.all().order_by('created_date')
     # Apply additional filters based on request.GET parameters
 
     # Pagination (optional)
-    '''paginator = Paginator(available_items, 10) # 10 items per page
+    paginator = Paginator(available_items, 10) # 10 items per page
+    page_obj = paginator.page(1)
+
     if (request.GET.get('page')):
         page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-
-        # Serialize items
-        serializer = ItemSerializer(page_obj.object_list, many=True)
-    '''
+        page_obj = paginator.page(page_number)
 
     search_query = request.GET.get('search', '')
 
@@ -53,7 +50,8 @@ def items_list(request):
     else:
         no_items_message = None
 
-    return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': no_items_message, 'searchstr':search_query, 'mystuff': request.resolver_match.url_name == 'items_list_my'})
+    return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': no_items_message, 'searchstr':search_query,
+     'mystuff': request.resolver_match.url_name == 'items_list_my', 'page' : page_obj})
 
 @login_required
 def add_item(request):
@@ -84,8 +82,8 @@ def add_review(request, item_id):
             review.save()
             
             return redirect('item_detail', item_id=item_id)  # Redirect to item detail page
-        else:
-            raise Exception("Your review cannot be submitted.")
+        # else:
+        #     raise Exception("Your review cannot be submitted.")
 
     return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item':item})
 
@@ -140,17 +138,12 @@ def item_detail(request, item_id):
                         accept_rental = True
                     else:
                         active_rentals_obj = None
-            #to be tested, catch issue when no rental active
-            else:
-                raise Exception("No active rental found for this user.")
 
             #check if there are any completed rentals that user may want to review
             review_obj =  Rental.objects.filter(renter=request.user, item=item, status='completed')
             if review_obj:
                 make_review = True
                 
-
-
     return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews})
 
 @login_required

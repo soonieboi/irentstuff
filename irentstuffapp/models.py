@@ -2,11 +2,12 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 
+
+#extend Decimal to prevent negative values
 class PositiveDecimalField(models.DecimalField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.validators.append(MinValueValidator(0.01))
-
 class Item(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
@@ -68,4 +69,3 @@ class Message(models.Model):
 
     def __str__(self):
         return f'{self.subject} - {self.sender} to {self.recipient} about {self.item.title} ({self.enquiring_user.username})'
-
