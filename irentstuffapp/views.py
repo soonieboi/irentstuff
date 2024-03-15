@@ -21,7 +21,7 @@ def index(request):
 
 def items_list(request):
     # Filter items with is_available=True
-    available_items = Item.objects.all().order_by('created_date')
+    available_items = Item.objects.all().order_by('created_date', 'title')
     # Apply additional filters based on request.GET parameters
 
     # Pagination (optional)
@@ -82,8 +82,6 @@ def add_review(request, item_id):
             review.save()
             
             return redirect('item_detail', item_id=item_id)  # Redirect to item detail page
-        # else:
-        #     raise Exception("Your review cannot be submitted.")
 
     return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item':item})
 
@@ -178,7 +176,7 @@ def delete_item(request, item_id):
     try: 
         item.delete()
     except Exception as e:
-        messages.error(request, 'Error deleting item: ' + str(e))
+        messages.error(request, 'Error deleting item: ' + item.title )
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 
@@ -439,6 +437,8 @@ def cancel_rental(request, item_id):
     # Check if the logged-in user is owner and status is confirmed
     cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='pending').first()
     if cancel_rental_obj:
+        if cancel_rental_obj.start_date < timezone.now().date():
+            raise Exception("You cannot cancel rental after the start date.")
         cancel_rental_obj.status = 'cancelled'
         cancel_rental_obj.cancelled_date = timezone.now()
         cancel_rental_obj.save()
