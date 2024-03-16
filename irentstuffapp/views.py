@@ -438,7 +438,7 @@ def cancel_rental(request, item_id):
     cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='pending').first()
     if cancel_rental_obj:
         if cancel_rental_obj.start_date < timezone.now().date():
-            raise Exception("You cannot cancel rental after the start date.")
+            raise ValidationError("You cannot cancel rental after the start date.")
         cancel_rental_obj.status = 'cancelled'
         cancel_rental_obj.cancelled_date = timezone.now()
         cancel_rental_obj.save()
