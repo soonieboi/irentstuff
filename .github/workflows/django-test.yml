@@ -1,9 +1,9 @@
-name: Unit tests with Pytest
+name: Unit tests with Django
 
 on: [push, pull_request]
 
 jobs:
-  unt_tests_with_pytest:
+  django_unit_tests:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -14,11 +14,10 @@ jobs:
       with:
         python-version: 3.10.9
 
-    - name: Install Dependencies
+    - name: Install requirements
       run: |
-        python -m pip install --upgrade pip
-        pip install pytest
-
-    - name: Run Unit Tests
+        pip install -r requirements.txt
+    
+    - name: Run tests
       run: |
-        pytest
+        python manage.py test

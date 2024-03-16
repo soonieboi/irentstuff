@@ -35,6 +35,5 @@ jobs:
           pip install -r requirements.txt
           chmod +x manage.py
           ./manage.py migrate
-          # ./manage.py collectstatic --noinput # issue 1
-          # sudo systemctl restart gunicorn.service # issue 2 
+          sudo systemctl restart apache2.service # add restart service
         EOF

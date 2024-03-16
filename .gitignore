@@ -8,4 +8,8 @@ db.sqlite3
 tmp/
 irentstuff/settings.py
 settings.py
+<<<<<<< HEAD
 *.pyc
+=======
+*.pyc
+>>>>>>> master
