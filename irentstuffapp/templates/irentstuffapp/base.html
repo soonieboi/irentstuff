@@ -54,7 +54,14 @@
           <li>
             <form class="d-flex px-4 pt-4 pt-lg-0" method="get" action="{% url 'items_list' %}">
               <input class="form-control me-2" type="search" id='search' name='search' placeholder="Search" aria-label="Search">
+              <select class="form-control me-2" name="category">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+              </select>
               <button class="btn btn-outline-light " type="submit">Search</button>
+              
             </form>
 
           </li>

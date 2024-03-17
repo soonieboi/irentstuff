@@ -12,7 +12,7 @@ from django.utils.html import strip_tags
 from django.utils import timezone 
 from django.db.models import Count
 from django.conf import settings
-from .models import Item, Rental, Message, Review
+from .models import Item, Rental, Message, Review, Category
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
 
 
@@ -36,6 +36,7 @@ def items_list(request):
     '''
 
     search_query = request.GET.get('search', '')
+    category_filter = request.GET.get('category', '')
 
     if request.user.is_authenticated:
         if request.resolver_match.url_name == 'items_list_my':
@@ -47,13 +48,22 @@ def items_list(request):
 
     if search_query:
         items = items.filter(title__contains=search_query).all()
+    
+    if category_filter:
+        items = items.filter(category__id=category_filter)
 
-    if not items:
-        no_items_message = True
-    else:
-        no_items_message = None
+    no_items_message = not items.exists()
 
-    return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': no_items_message, 'searchstr':search_query, 'mystuff': request.resolver_match.url_name == 'items_list_my'})
+    categories = Category.objects.all()
+
+    return render(request, 'irentstuffapp/items.html', {
+        'items': items,
+        'no_items_message': no_items_message,
+        'searchstr': search_query,
+        'mystuff': request.resolver_match.url_name == 'items_list_my',
+        'categories': categories,  # New context variable for all categories
+        'selected_category': category_filter  # New context variable for currently selected category
+    })
 
 @login_required
 def add_item(request):
