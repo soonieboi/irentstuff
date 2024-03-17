@@ -37,33 +37,29 @@ def items_list(request):
 
     search_query = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
+    
 
-    if request.user.is_authenticated:
-        if request.resolver_match.url_name == 'items_list_my':
-            items = Item.objects.filter(owner=request.user.id).all()
-        else:
-            items = Item.objects.exclude(owner=request.user.id).all() 
-    else:
-        items = Item.objects.all() 
+    items = Item.objects.all()
 
     if search_query:
-        items = items.filter(title__contains=search_query).all()
-    
-    if category_filter:
-        items = items.filter(category__id=category_filter)
+        items = items.filter(title__icontains=search_query)
 
-    no_items_message = not items.exists()
+    if category_filter:
+        items = items.filter(category__name__iexact=category_filter)
 
     categories = Category.objects.all()
 
-    return render(request, 'irentstuffapp/items.html', {
+    context = {
         'items': items,
-        'no_items_message': no_items_message,
+        'categories': categories,
         'searchstr': search_query,
-        'mystuff': request.resolver_match.url_name == 'items_list_my',
-        'categories': categories,  # New context variable for all categories
-        'selected_category': category_filter  # New context variable for currently selected category
-    })
+        'selected_category': category_filter,
+        'no_items_message': not items.exists(),
+
+    }
+
+    return render(request, 'irentstuffapp/items.html', context)
+
 
 @login_required
 def add_item(request):
