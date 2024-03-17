@@ -38,8 +38,11 @@ def items_list(request):
     search_query = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
     
-
-    items = Item.objects.all()
+    if request.user.is_authenticated and request.resolver_match.url_name == 'items_list_my':
+        items = Item.objects.filter(owner=request.user)
+    else:
+        items = Item.objects.all()
+    # items = Item.objects.all()
 
     if search_query:
         items = items.filter(title__icontains=search_query)
@@ -55,6 +58,7 @@ def items_list(request):
         'searchstr': search_query,
         'selected_category': category_filter,
         'no_items_message': not items.exists(),
+         'mystuff': request.resolver_match.url_name == 'items_list_my',
 
     }
 
