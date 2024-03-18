@@ -28,8 +28,8 @@
   <nav class="navbar navbar-expand-lg navbar-light text-bg-danger sticky-top">
     <div class="container-fluid">
       <a class="navbar-brand text-white" href="{% url 'home' %}">iRentStuff</a>
-
       <div>
+  
         {% if user.is_authenticated %}
         <a class="text-nowrap d-inline d-lg-none text-white" href="{% url 'items_list_my' %}" title="My Stuff"><i class="fa-solid fa-grip px-2"></i></a>
         <a class=" text-nowrap d-inline d-lg-none text-white" href="{% url 'inbox' %}" title="Inbox"><i class="fa-solid fa-message px-2"></i></a>
@@ -54,7 +54,14 @@
           <li>
             <form class="d-flex px-4 pt-4 pt-lg-0" method="get" action="{% url 'items_list' %}">
               <input class="form-control me-2" type="search" id='search' name='search' placeholder="Search" aria-label="Search">
+              <select class="form-control me-2" name="category">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category.name }}" {% if selected_category == category.name %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+              </select>
               <button class="btn btn-outline-light " type="submit">Search</button>
+              
             </form>
 
           </li>
