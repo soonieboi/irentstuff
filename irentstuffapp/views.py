@@ -13,7 +13,7 @@ from django.utils.html import strip_tags
 from django.utils import timezone 
 from django.db.models import Count
 from django.conf import settings
-from .models import Item, Rental, Message, Review
+from .models import Item, Rental, Message, Review, Category
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
 
 
@@ -34,25 +34,33 @@ def items_list(request):
         page_obj = paginator.page(page_number)
 
     search_query = request.GET.get('search', '')
-
-    if request.user.is_authenticated:
-        if request.resolver_match.url_name == 'items_list_my':
-            items = Item.objects.filter(owner=request.user.id).all()
-        else:
-            items = Item.objects.exclude(owner=request.user.id).all() 
+    category_filter = request.GET.get('category', '')
+    
+    if request.user.is_authenticated and request.resolver_match.url_name == 'items_list_my':
+        items = Item.objects.filter(owner=request.user)
     else:
-        items = Item.objects.all() 
+        items = Item.objects.all()
+    # items = Item.objects.all()
 
     if search_query:
-        items = items.filter(title__contains=search_query).all()
+        items = items.filter(title__icontains=search_query)
 
-    if not items:
-        no_items_message = True
-    else:
-        no_items_message = None
+    if category_filter:
+        items = items.filter(category__name__iexact=category_filter)
 
-    return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': no_items_message, 'searchstr':search_query,
-     'mystuff': request.resolver_match.url_name == 'items_list_my', 'page' : page_obj})
+    categories = Category.objects.all()
+
+    context = {
+        'items': items,
+        'categories': categories,
+        'searchstr': search_query,
+        'selected_category': category_filter,
+        'no_items_message': not items.exists(),
+        'mystuff': request.resolver_match.url_name == 'items_list_my',
+        'page' : page_obj
+    }
+
+    return render(request, 'irentstuffapp/items.html', context)
 
 @login_required
 def add_item(request):
@@ -172,6 +180,9 @@ def delete_item(request, item_id):
     if request.user != item.owner:
         # Optionally, you can handle unauthorized access here
         return redirect('item_detail', item_id=item.id)
+
+# add logic to find if associated rental confirmed/pending
+# also some logic to not allow delete if item alr not existing
 
     # Delete the item
     try: 
@@ -436,10 +447,10 @@ def cancel_rental(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
 
     # Check if the logged-in user is owner and status is confirmed
-    cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='pending').first()
+    cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='confirmed').first()
     if cancel_rental_obj:
         if cancel_rental_obj.start_date < timezone.now().date():
-            raise ValidationError("You cannot cancel rental after the start date.")
+            raise ValidationError("You cannot cancel rental after the start date, and status is \'Confirmed\'.")
         cancel_rental_obj.status = 'cancelled'
         cancel_rental_obj.cancelled_date = timezone.now()
         cancel_rental_obj.save()

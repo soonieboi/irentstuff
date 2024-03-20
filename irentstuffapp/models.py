@@ -7,7 +7,7 @@ from django.core.validators import MinValueValidator
 class PositiveDecimalField(models.DecimalField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.validators.append(MinValueValidator(0.01))
+        self.validators.append(MinValueValidator(0.01, message='Value should be at least 0.01.'))
         
 class Item(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
