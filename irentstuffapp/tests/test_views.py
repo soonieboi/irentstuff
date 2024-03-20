@@ -250,3 +250,49 @@ class LogoutUserViewTestCase(TestCase):
 
         # Check that the user is logged out
         self.assertNotIn("_auth_user_id", self.client.session)
+
+class RentalCancellationTestCase(TestCase):
+    def setUp(self):
+        # Create a user
+        self.owner = User.objects.create_user(username='owner', password='testpassword1')
+        self.renter = User.objects.create_user(username='renter', password='testpassword2')
+
+        # Create an item
+        self.item = Item.objects.create(id=1, title='Test Item', owner=self.owner, price_per_day=1.00, deposit=10.00,
+            created_date=timezone.now(), category=Category.objects.create(name='testcategory'), condition='good')
+
+        # Create a rental with a start date in the past and end date in the future
+        start_date = timezone.now() - timedelta(days=1)
+        end_date = timezone.now() + timedelta(days=5)
+        self.rental = Rental.objects.create(id=2, item=self.item, owner=self.owner, status='confirmed',
+                                            start_date=start_date, end_date=end_date, renter=self.renter)
+
+    def test_cancel_rental(self):
+        # Log in as the user
+        self.client.login(username='owner', password='testpassword1')
+
+        # Set the start date in the past and end date in the future
+        start_date = timezone.now() - timedelta(days=5)
+        end_date = timezone.now() + timedelta(days=5)
+        self.rental.start_date = start_date
+        self.rental.end_date = end_date
+        self.rental.save()
+
+        # Attempt to cancel the rental
+        with self.assertRaises(ValidationError) as cm:
+            response = self.client.get(reverse('cancel_rental', args=(self.item.id,)), follow= True)
+
+        # Check if the correct error message is raised
+        self.assertEqual(str(cm.exception), "[\"You cannot cancel rental after the start date, and status is \'Confirmed\'.\"]")
+
+        # Verify that the status and cancelled_date of the rental remain unchanged
+        self.rental.refresh_from_db()
+        self.assertEqual(self.rental.status, 'confirmed')
+        self.assertIsNone(self.rental.cancelled_date)
+
+# class ItemDeletionTestCase(TestCase):
+
+#     def setUp(self):
+#         return 0
+#     def test_cancel_rental(self): 
+#         return 0

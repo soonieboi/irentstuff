@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives    
+from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -42,7 +43,6 @@ def items_list(request):
         items = Item.objects.filter(owner=request.user)
     else:
         items = Item.objects.all()
-    # items = Item.objects.all()
 
     if search_query:
         items = items.filter(title__icontains=search_query)
@@ -64,12 +64,11 @@ def items_list(request):
 
     return render(request, 'irentstuffapp/items.html', context)
 
-
 @login_required
 def add_item(request):
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES)
-        if form.is_valid():
+        if form.is_valid():  
             item = form.save(commit=False)
             item.owner = request.user  # Set the item's creator to the logged-in user
             item.created_date = timezone.now() 
@@ -186,8 +185,14 @@ def delete_item(request, item_id):
         # Optionally, you can handle unauthorized access here
         return redirect('item_detail', item_id=item.id)
 
+# add logic to find if associated rental confirmed/pending
+# also some logic to not allow delete if item alr not existing
+
     # Delete the item
-    item.delete()
+    try: 
+        item.delete()
+    except Exception as e:
+        messages.error(request, 'Error deleting item: ' + item.title )
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 
@@ -446,8 +451,11 @@ def cancel_rental(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
 
     # Check if the logged-in user is owner and status is confirmed
-    cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='pending').first()
+    cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='confirmed').first()
     if cancel_rental_obj:
+        if cancel_rental_obj.start_date < timezone.now().date():
+            raise ValidationError("You cannot cancel rental after the start date, and status is \'Confirmed\'.")
+
         cancel_rental_obj.status = 'cancelled'
         cancel_rental_obj.cancelled_date = timezone.now()
         cancel_rental_obj.save()
