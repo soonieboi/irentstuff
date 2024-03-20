@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="row p-2 w-98 m-0">
-  
+
   {% if mystuff %}
   <h3 class="pt-3 pb-2">MY STUFF</h3>
   {% endif %}
@@ -16,63 +16,63 @@
     <div class="shadow-sm card mb-3">
       <div class="row g-0 gx-4">
         <div class="col-12 col-md-4">
-        <p class="card-text m-4 mb-0" >No items found</p>
-        <a class="card-text btn btn-primary m-4" href="{% url 'items_list' %}">Check out other stuff</a>
+          <p class="card-text m-4 mb-0">No items found</p>
+          <a class="card-text btn btn-primary m-4" href="{% url 'items_list' %}">Check out other stuff</a>
+        </div>
       </div>
     </div>
-  </div>
-  {% else %}
+    {% else %}
 
-  {% for item in page %}
-  <!-- {{ package|pprint }} -->
-  
+    {% for item in page %}
+    <!-- {{ package|pprint }} -->
 
-  <div class="itm col-xl-2 col-md-3 col-sm-6 p-2">
-    <a href="{% url 'item_detail' item_id=item.id %}">
-      
+
+    <div class="itm col-xl-2 col-md-3 col-sm-6 p-2">
+      <a href="{% url 'item_detail' item_id=item.id %}">
+
         <div class="card card-common h-100 hover-shadow">
           <div class="card-body py-1">
-        <div class="card-text small"><strong>{{item.owner}}</strong></div>
-      </div>
-        {% if item.image != "" %}
-        <img src="/media/{{ item.image }}" class="card-img-top img-fluid object-fit-cover " />
-
-
-        {% endif %}
-        <div class="card-body pb-0">
-          <h6 class="card-title small">{{item.title|truncatechars:65}}</h6>
-          
-        </div>
-        <div class="card-footer border-0 bg-white pt-0 pb-4">
-          <div class="card-text pb-2">
-            <div class="small">Rental Price (per day):</div>
-            <div class="fs-5">${{ item.price_per_day }}</div>
+            <div class="card-text small"><strong>{{item.owner}}</strong></div>
           </div>
-          <div class="card-text">
-            <div class="small">Buy Price:</div>
-            <div class="fs-6">${{ item.deposit }}</div>
+          {% if item.image != "" %}
+          <img src="/media/{{ item.image }}" class="card-img-top img-fluid object-fit-cover " />
+
+
+          {% endif %}
+          <div class="card-body pb-0">
+            <h6 class="card-title small">{{item.title|truncatechars:65}}</h6>
+
+          </div>
+          <div class="card-footer border-0 bg-white pt-0 pb-4">
+            <div class="card-text pb-2">
+              <div class="small">Rental Price (per day):</div>
+              <div class="fs-5">${{ item.price_per_day }}</div>
+            </div>
+            <div class="card-text">
+              <div class="small">Buy Price:</div>
+              <div class="fs-6">${{ item.deposit }}</div>
+            </div>
+
           </div>
 
         </div>
+      </a>
+    </div>
 
-      </div>
-    </a>
-  </div>
+    {% endfor %}
 
-  {% endfor %}
-
-<div style="text-align: center;">
+    <div style="text-align: center;">
       {% if page.has_previous %}
-        <a href="?page=1" style="display: inline-block; margin-right: 10px;">First</a>
-        <a href="?page={{ page.previous_page_number }}" style="display: inline-block; margin-right: 20px;">Previous</a>
+      <a href="?page=1" style="display: inline-block; margin-right: 10px;">First</a>
+      <a href="?page={{ page.previous_page_number }}" style="display: inline-block; margin-right: 20px;">Previous</a>
       {% endif %}
-    
+
       {% if page.has_next %}
-        <a href="?page={{ page.next_page_number }}" style="display: inline-block; margin-right: 10px;">Next</a>
-        <a href="?page={{ page.paginator.num_pages }}" style="display: inline-block; margin-right: 20px;">Last</a>
+      <a href="?page={{ page.next_page_number }}" style="display: inline-block; margin-right: 10px;">Next</a>
+      <a href="?page={{ page.paginator.num_pages }}" style="display: inline-block; margin-right: 20px;">Last</a>
       {% endif %}
     </div>
-  {% endif %}
+    {% endif %}
 
-</div>
-{% endblock %}
+  </div>
+  {% endblock %}
