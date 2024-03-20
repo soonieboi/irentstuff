@@ -13,7 +13,7 @@ from django.utils.html import strip_tags
 from django.utils import timezone 
 from django.db.models import Count
 from django.conf import settings
-from .models import Item, Rental, Message, Review
+from .models import Item, Rental, Message, Review, Category
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
 
 
@@ -34,25 +34,33 @@ def items_list(request):
         page_obj = paginator.page(page_number)
 
     search_query = request.GET.get('search', '')
-
-    if request.user.is_authenticated:
-        if request.resolver_match.url_name == 'items_list_my':
-            items = Item.objects.filter(owner=request.user.id).all()
-        else:
-            items = Item.objects.exclude(owner=request.user.id).all() 
+    category_filter = request.GET.get('category', '')
+    
+    if request.user.is_authenticated and request.resolver_match.url_name == 'items_list_my':
+        items = Item.objects.filter(owner=request.user)
     else:
-        items = Item.objects.all() 
+        items = Item.objects.all()
+    # items = Item.objects.all()
 
     if search_query:
-        items = items.filter(title__contains=search_query).all()
+        items = items.filter(title__icontains=search_query)
 
-    if not items:
-        no_items_message = True
-    else:
-        no_items_message = None
+    if category_filter:
+        items = items.filter(category__name__iexact=category_filter)
 
-    return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': no_items_message, 'searchstr':search_query,
-     'mystuff': request.resolver_match.url_name == 'items_list_my', 'page' : page_obj})
+    categories = Category.objects.all()
+
+    context = {
+        'items': items,
+        'categories': categories,
+        'searchstr': search_query,
+        'selected_category': category_filter,
+        'no_items_message': not items.exists(),
+        'mystuff': request.resolver_match.url_name == 'items_list_my',
+        'page' : page_obj
+    }
+
+    return render(request, 'irentstuffapp/items.html', context)
 
 @login_required
 def add_item(request):
