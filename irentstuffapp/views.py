@@ -40,7 +40,6 @@ def items_list(request):
         items = Item.objects.filter(owner=request.user)
     else:
         items = Item.objects.all()
-    # items = Item.objects.all()
 
     if search_query:
         items = items.filter(title__icontains=search_query)

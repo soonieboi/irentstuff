@@ -505,7 +505,6 @@ class LogoutUserViewTestCase(TestCase):
         # Check that the user is logged out
         self.assertNotIn("_auth_user_id", self.client.session)
 
-
 class RentalCancellationTestCase(TestCase):
     def setUp(self):
         # Create a user
