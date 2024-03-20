@@ -1,31 +1,53 @@
-{% extends 'irentstuffapp/base.html' %}
-
-{% block content %}
-
+{% extends 'irentstuffapp/base.html' %} {% block content %}
 
 <center>
-  <h1 class="p-4">Add Stuff</h1>
+    <h1 class="p-4">Add Stuff</h1>
 </center>
 
 <form class="shadow-sm bg-light col-11 col-sm-8 mx-auto card p-3 b-0" method="post" action="{% url 'add_item' %}"
-  enctype="multipart/form-data">
+    enctype="multipart/form-data">  
 
-      {% csrf_token %}
-      {% for field in form %}
-      <div class="form-group">
-          {{ field.label_tag }}
-          {{ field }}
-          {% if field.errors %}
-              <div class="text-danger">
-                  {% for error in field.errors %}
-                      <span>{{ error }}</span>
-                  {% endfor %}
-              </div>
-          {% endif %}
-      </div>
-  {% endfor %}
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-group">
+        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+        {% if field.name == 'description' %}
+        <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" name="{{ field.html_name }}" rows="6"
+            style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
+        {% elif field.field.widget.input_type == 'select' %}
+        <select class="form-control select-arrow {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" name="{{ field.html_name }}">
+            {% for choice in field.field.choices %}
+                <option value="{{ choice.0 }}" {% if choice.0 == field.value %}selected{% endif %}>{{ choice.1 }}</option>
+            {% endfor %}
+        </select>
+        {% elif field.name == 'image' %}
+        <div><input type="file" class="form-control-file {% if field.errors %}is-invalid{% endif %}" name="{{ field.html_name }}"
+                id="{{ field.id_for_label }}" accept="image/*" multiple></div>
+        {% else %}
+        <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1" name="{{ field.html_name }}"
+            style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
+        {% endif %}
+        {% for error in field.errors %}
+            <small class="text-danger">{{ error }}</small>
+        {% endfor %}
+    </div>
+    {% endfor %} 
 
-  <button class="btn btn-primary col-md-3 my-4" type="submit">Add item</button>
-            </form>
+    <button class="btn btn-primary col-md-3 my-4" type="submit">Add item</button>
+</form>
+
+<style>
+    /* Style to remove scrollbars from textarea */
+    textarea {
+        resize: none;
+    }
+
+    /* Style to add dropdown arrow to select dropdown */
+    .select-arrow {
+        -webkit-appearance: menulist-button;
+        -moz-appearance: menulist-button;
+        appearance: menulist-button;
+    }
+</style>
 
 {% endblock %}
