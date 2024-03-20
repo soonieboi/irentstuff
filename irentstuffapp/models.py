@@ -20,6 +20,7 @@ class Item(models.Model):
     image = models.ImageField(upload_to='item_images/')
     created_date = models.DateTimeField(blank=True)
     deleted_date = models.DateTimeField(blank=True, null=True)
+    status = models.CharField(max_length=255, choices=[('active', 'Active'), ('deleted', 'Deleted'),('rented', 'Rented')])
 
 
     def __str__(self):
@@ -42,6 +43,7 @@ class Rental(models.Model):
     complete_date = models.DateTimeField(blank=True, null=True)
     cancelled_date = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=255, choices=[('pending', 'Pending'), ('confirmed', 'Confirmed'), ('completed', 'Completed'), ('cancelled', 'Cancelled')])
+    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)])
     # You can add additional fields like rating, payment details, etc.
 
     def __str__(self):

@@ -37,7 +37,7 @@ def items_list(request):
     category_filter = request.GET.get('category', '')
     
     if request.user.is_authenticated and request.resolver_match.url_name == 'items_list_my':
-        items = Item.objects.filter(owner=request.user)
+        items = Item.objects.filter(owner=request.user).exclude(status="deleted") #to confirm if here or below
     else:
         items = Item.objects.all()
 
@@ -69,6 +69,7 @@ def add_item(request):
             item = form.save(commit=False)
             item.owner = request.user  # Set the item's creator to the logged-in user
             item.created_date = timezone.now() 
+            item.status = 'active'
             item.save()
             return redirect('item_detail', item_id=item.id)  # Redirect to item detail page
     else:
@@ -161,6 +162,10 @@ def edit_item(request, item_id):
         # Optionally, you can handle unauthorized access here
         return redirect('item_detail', item_id=item.id)
 
+    if item.status == 'deleted':
+        messages.error(request, 'You cannot edit a deleted item')
+        return redirect('item_detail', item_id=item.id)
+
     if request.method == 'POST':
         form = ItemEditForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
@@ -183,11 +188,16 @@ def delete_item(request, item_id):
 # add logic to find if associated rental confirmed/pending
 # also some logic to not allow delete if item alr not existing
 
-    # Delete the item
-    try: 
-        item.delete()
-    except Exception as e:
-        messages.error(request, 'Error deleting item: ' + item.title )
+#item is deleted or rented
+    if item.status == 'deleted' or item.status == 'rented':
+        messages.error(request, 'You cannot delete a deleted or rented item')
+        return redirect('item_detail', item_id=item.id)
+
+    # Soft Delete the item
+    else: 
+        item.status = 'deleted'
+        item.save()
+
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 
@@ -309,6 +319,10 @@ def add_rental(request, item_id, username=""):
         if active_rentals.exists():
             messages.error(request, 'There are active rentals for this item. You cannot add a new rental.')
             return redirect('item_detail', item_id=item.id)
+
+        if item.status == 'deleted':
+            messages.error(request, 'You cannot rent a deleted item')   # to confirm if used
+            return redirect('item_detail', item_id=item.id)    
 
         # Check if the logged-in user is the creator, owner, or renter of the item
         if request.user == form['renterid']:
