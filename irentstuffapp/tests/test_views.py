@@ -1,11 +1,12 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from django.test import TestCase, Client
 from django.urls import reverse
-from irentstuffapp.models import Item, Category, Message
+from irentstuffapp.models import Item, Category, Message, Rental
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.core import mail
-
+from django.core.exceptions import ValidationError 
+from django.utils import timezone
 
 class InboxViewTestCase(TestCase):
     def setUp(self):
