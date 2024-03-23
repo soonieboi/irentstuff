@@ -29,6 +29,9 @@ jobs:
         HOST: ${{ secrets.HOST }}
         USERNAME: ${{ secrets.USERNAME }}
       run: |
+        # Using rsync to copy files to the EC2 instance
+        rsync -avz --exclude '.git/' --exclude 'venv/' . $USERNAME@$HOST:/home/ubuntu/irentstuff
+        
         ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
           cd /home/ubuntu/irentstuff
           source ../venv/bin/activate
