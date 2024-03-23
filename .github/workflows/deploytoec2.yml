@@ -29,21 +29,13 @@ jobs:
         HOST: ${{ secrets.HOST }}
         USERNAME: ${{ secrets.USERNAME }}
       run: |
-        sudo chown -R $ubuntu:$ubuntu /home/ubuntu/irentstuff
         RSYNC_RSH="ssh -o StrictHostKeyChecking=no" rsync -avz --exclude '.git/' --exclude 'venv/' --exclude 'db.sqlite3/' . $USERNAME@$HOST:/home/ubuntu/irentstuff
         
         ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
-          cd /home/ubuntu/
-          source /venv/bin/activate
+          cd /home/ubuntu/irentstuff
+          source ../venv/bin/activate
           pip install -r requirements.txt
           chmod +x manage.py
           ./manage.py migrate
-
-          sudo chown www-data:www-data irentstuff
-          sudo chown www-data:www-data db.sqlite3
-          sudo chown -R www-data:www-data irentstuff/media
-    
-          
-          
           sudo systemctl restart apache2.service # add restart service
         EOF
