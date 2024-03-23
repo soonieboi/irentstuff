@@ -41,6 +41,8 @@ jobs:
 
           sudo chown www-data:www-data irentstuff
           sudo chown www-data:www-data db.sqlite3
+          sudo chown -R www-data:www-data irentstuff/media
+          
           
           sudo systemctl restart apache2.service # add restart service
         EOF
