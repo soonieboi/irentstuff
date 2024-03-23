@@ -33,8 +33,8 @@ jobs:
         RSYNC_RSH="ssh -o StrictHostKeyChecking=no" rsync -avz --exclude '.git/' --exclude 'venv/' --exclude 'db.sqlite3/' . $USERNAME@$HOST:/home/ubuntu/irentstuff
         
         ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
-          cd /home/ubuntu/irentstuff
-          source ../venv/bin/activate
+          cd /home/ubuntu/
+          source /venv/bin/activate
           pip install -r requirements.txt
           chmod +x manage.py
           ./manage.py migrate
