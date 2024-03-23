@@ -38,7 +38,7 @@ jobs:
           pip install -r requirements.txt
           chmod +x manage.py
           ./manage.py migrate
-          sudo chown www-data:www-data ubuntu
+
           sudo chown www-data:www-data irentstuff
           sudo chown www-data:www-data db.sqlite3
           
