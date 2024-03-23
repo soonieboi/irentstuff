@@ -30,7 +30,7 @@ jobs:
         USERNAME: ${{ secrets.USERNAME }}
       run: |
         # Disable strict host key checking for rsync
-        RSYNC_RSH="ssh -o StrictHostKeyChecking=no" rsync -avz --exclude '.git/' --exclude 'venv/' . $USERNAME@$HOST:/home/ubuntu/irentstuff
+        RSYNC_RSH="ssh -o StrictHostKeyChecking=no" rsync -avz --exclude '.git/' --exclude 'venv/' --exclude 'db.sqlite3' . $USERNAME@$HOST:/home/ubuntu/irentstuff
         
         ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
           cd /home/ubuntu/irentstuff
