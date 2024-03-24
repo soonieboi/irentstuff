@@ -39,6 +39,6 @@ jobs:
           ./manage.py migrate
           chmod -R  777 media
           chmod 777 db.sqlite3
-          chmod 777 irentstuff
+          chmod 777 ../irentstuff
           sudo systemctl restart apache2.service # add restart service
         EOF
