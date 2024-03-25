@@ -29,7 +29,7 @@ jobs:
         HOST: ${{ secrets.HOST }}
         USERNAME: ${{ secrets.USERNAME }}
       run: |
-        RSYNC_RSH="ssh -o StrictHostKeyChecking=no" rsync -avz --exclude={'db.sqlite3','media/','env/','tmp/'} . $USERNAME@$HOST:/home/ubuntu/irentstuff
+        RSYNC_RSH="ssh -o StrictHostKeyChecking=no" rsync -avz --exclude={'db.sqlite3','media/','env/','tmp/'.'.git/'} . $USERNAME@$HOST:/home/ubuntu/irentstuff
         
         ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
           cd /home/ubuntu/irentstuff
