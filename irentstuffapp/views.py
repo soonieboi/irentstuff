@@ -37,7 +37,7 @@ def items_list(request):
     category_filter = request.GET.get('category', '')
     
     if request.user.is_authenticated and request.resolver_match.url_name == 'items_list_my':
-        items = Item.objects.filter(owner=request.user).exclude(status="deleted") #to confirm if here or below
+        items = Item.objects.filter(owner=request.user)
     else:
         items = Item.objects.all()
 

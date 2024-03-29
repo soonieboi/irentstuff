@@ -35,7 +35,3 @@ pre-requistes
 
 To run on localhost:
 `python manage.py runserver`
-
-
-## Reference Repository:
-https://github.com/cyclades1/Rental
