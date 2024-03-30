@@ -20,8 +20,7 @@ class Item(models.Model):
     image = models.ImageField(upload_to='item_images/')
     created_date = models.DateTimeField(blank=True)
     deleted_date = models.DateTimeField(blank=True, null=True)
-    status = models.CharField(max_length=255, choices=[('active', 'Active'), ('deleted', 'Deleted'),('rented', 'Rented')])
-
+    status = models.CharField(max_length=255, choices=[('active', 'Active'), ('deleted', 'Deleted'),('rented', 'Rented')], default='active')
 
     def __str__(self):
         return self.title
@@ -42,8 +41,8 @@ class Rental(models.Model):
     confirm_date = models.DateTimeField(blank=True, null=True)
     complete_date = models.DateTimeField(blank=True, null=True)
     cancelled_date = models.DateTimeField(blank=True, null=True)
-    status = models.CharField(max_length=255, choices=[('pending', 'Pending'), ('confirmed', 'Confirmed'), ('completed', 'Completed'), ('cancelled', 'Cancelled')])
-    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)])
+    status = models.CharField(max_length=255, choices=[('pending', 'Pending'), ('confirmed', 'Confirmed'), ('completed', 'Completed'), ('cancelled', 'Cancelled')], default='pending')
+    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)], null=True)
     # You can add additional fields like rating, payment details, etc.
 
     def __str__(self):
@@ -52,7 +51,7 @@ class Rental(models.Model):
 class Review(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     rental = models.ForeignKey(Rental, on_delete=models.CASCADE)
-    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)])
+    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)], null=True)
     comment = models.TextField(blank=True)
     created_date = models.DateTimeField(blank=True)
 
