@@ -451,10 +451,14 @@ def cancel_rental(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
 
     # Check if the logged-in user is owner and status is confirmed
-    cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='confirmed').first()
-    if cancel_rental_obj:
-        if cancel_rental_obj.start_date < timezone.now().date():
-            raise ValidationError("You cannot cancel rental after the start date, and status is \'Confirmed\'.")
+    
+    cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user).first()
+    rent_status = cancel_rental_obj.status;
+
+    if rent_status == 'confirmed' and cancel_rental_obj.start_date < timezone.now().date():
+        raise ValidationError("You cannot cancel rental after the start date, and status is \'Confirmed\'.")
+
+    elif rent_status in ['pending', 'confirmed']:
 
         cancel_rental_obj.status = 'cancelled'
         cancel_rental_obj.cancelled_date = timezone.now()

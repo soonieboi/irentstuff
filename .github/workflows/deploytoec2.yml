@@ -29,6 +29,8 @@ jobs:
         HOST: ${{ secrets.HOST }}
         USERNAME: ${{ secrets.USERNAME }}
       run: |
+        RSYNC_RSH="ssh -o StrictHostKeyChecking=no" rsync -avz --no-perms --no-owner --no-group --exclude={'db.sqlite3','media/','env/','tmp/','.git/','.github/'} . $USERNAME@$HOST:/home/ubuntu/irentstuff
+        
         ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
           cd /home/ubuntu/irentstuff
           source ../venv/bin/activate
