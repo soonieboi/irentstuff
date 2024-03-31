@@ -9,6 +9,7 @@ from irentstuffapp.models import Item, Category, Message, Rental
 from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm
 from PIL import Image
 from unittest.mock import patch
+
 from django.core.exceptions import ValidationError 
 from django.utils import timezone
 import io
@@ -700,6 +701,7 @@ class CancelRentalViewTestCase(TestCase):
             end_date=datetime.now().date() + timedelta(2),
             status="pending",
         )
+
 
     def test_cancel_rental(self):
         # Log in as the owner
