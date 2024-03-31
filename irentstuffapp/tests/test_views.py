@@ -1,3 +1,4 @@
+
 from datetime import datetime, timezone, timedelta, date
 from django.contrib.auth.models import User
 from django.core import mail
@@ -704,7 +705,7 @@ class CancelRentalViewTestCase(TestCase):
     def test_cancel_rental(self):
         # Log in as the owner
         self.client.login(username="testowner", password="password123")
-
+        
         # Make a POST request to cancel the rental
         response = self.client.post(
             reverse("cancel_rental", kwargs={"item_id": self.item.id}), follow=True
@@ -866,3 +867,4 @@ class ItemMessagesViewTestCase(TestCase):
 #         return 0
 #     def test_cancel_rental(self): 
 #         return 0
+
