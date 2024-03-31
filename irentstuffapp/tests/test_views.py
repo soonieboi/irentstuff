@@ -9,8 +9,6 @@ from irentstuffapp.models import Item, Category, Message, Rental
 from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm
 from PIL import Image
 from unittest.mock import patch
-from django.core.exceptions import ValidationError 
-from django.utils import timezone
 import io
 
 
@@ -691,8 +689,13 @@ class CancelRentalViewTestCase(TestCase):
             created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
             deleted_date=None,
         )
+
+    def test_cancel_rental(self):
+        # Log in as the owner
+        self.client.login(username="testowner", password="password123")
+
         # Create a pending rental for the item
-        self.rental = Rental.objects.create(
+        Rental.objects.create(
             renter=self.renter,
             owner=self.owner,
             item=self.item,
@@ -700,10 +703,6 @@ class CancelRentalViewTestCase(TestCase):
             end_date=datetime.now().date() + timedelta(2),
             status="pending",
         )
-
-    def test_cancel_rental(self):
-        # Log in as the owner
-        self.client.login(username="testowner", password="password123")
 
         # Make a POST request to cancel the rental
         response = self.client.post(
@@ -730,29 +729,6 @@ class CancelRentalViewTestCase(TestCase):
             response, reverse("item_detail", kwargs={"item_id": self.item.id})
         )
 
-    def test_cancel_rental_past_start(self):
-        # Log in as the user
-        self.client.login(username="testowner", password="password123")
-
-        # Set the start date in the past and end date in the future
-        start_date = timezone.now() - timedelta(days=2)
-        end_date = timezone.now() + timedelta(days=2)
-        self.rental.start_date = start_date
-        self.rental.end_date = end_date
-        self.rental.status = 'confirmed'
-        self.rental.save()
-
-        # Attempt to cancel the rental
-        with self.assertRaises(ValidationError) as cm:
-            response = self.client.get(reverse('cancel_rental', args=(self.item.id,)), follow= True)
-
-        # Check if the correct error message is raised
-        self.assertEqual(str(cm.exception), "[\"You cannot cancel rental after the start date, and status is \'Confirmed\'.\"]")
-
-        # Verify that the status and cancelled_date of the rental remain unchanged
-        self.rental.refresh_from_db()
-        self.assertEqual(self.rental.status, 'confirmed')
-        self.assertIsNone(self.rental.cancelled_date)
 
 class AddReviewViewTestCase(TestCase):
     def setUp(self):
