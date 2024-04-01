@@ -24,8 +24,6 @@
   {% else %}
 
   {% for item in items %}
-  <!-- {{ package|pprint }} -->
-  
 
   <div class="itm col-xl-2 col-md-3 col-sm-6 p-2">
     <a href="{% url 'item_detail' item_id=item.id %}">
@@ -52,9 +50,7 @@
             <div class="small">Buy Price:</div>
             <div class="fs-6">${{ item.deposit }}</div>
           </div>
-
         </div>
-
       </div>
     </a>
   </div>
@@ -67,7 +63,7 @@
       <a href="?page={{ page.previous_page_number }}" style="display: inline-block; margin-right: 20px;">Previous</a>
       {% endif %}
 
-      {% if page.has_next %}
+      {% if page.has_next and page.paginator.num_pages > page.number %}
       <a href="?page={{ page.next_page_number }}" style="display: inline-block; margin-right: 10px;">Next</a>
       <a href="?page={{ page.paginator.num_pages }}" style="display: inline-block; margin-right: 20px;">Last</a>
       {% endif %}
