@@ -452,9 +452,6 @@ class DeleteItemViewTestCase(TestCase):
         self.assertIsNone(Item.objects.filter(pk=self.item.id).first())  # Check if item is deleted from database
 
     def test_delete_item_with_rental(self): 
-
-        self.factory = RequestFactory()
-
         self.rental = Rental.objects.create(
             renter=self.renter,
             owner=self.user,
