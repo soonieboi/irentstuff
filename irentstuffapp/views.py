@@ -187,6 +187,11 @@ def delete_item(request, item_id):
 # add logic to find if associated rental confirmed/pending
 # also some logic to not allow delete if item alr not existing
 
+    rental = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
+    if rental:
+        messages.error(request, 'You cannot delete an item when rental status is Pending or Confirmed!')
+        return redirect('item_detail', item_id=item.id)
+
 # #item is deleted or rented
 #     if item.status == 'deleted' or item.status == 'rented':
 #         messages.error(request, 'You cannot delete a deleted or rented item')
