@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives    
+from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -186,8 +187,34 @@ def delete_item(request, item_id):
         # Optionally, you can handle unauthorized access here
         return redirect('item_detail', item_id=item.id)
 
-    # Delete the item
-    item.delete()
+# add logic to find if associated rental confirmed/pending
+
+    rental = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
+    if rental:
+        messages.error(request, 'You cannot delete an item when rental status is Pending or Confirmed!')
+        return redirect('item_detail', item_id=item.id)
+
+# #item is deleted or rented
+#     if item.status == 'deleted' or item.status == 'rented':
+#         messages.error(request, 'You cannot delete a deleted or rented item')
+#         return redirect('item_detail', item_id=item.id)
+
+#     # Soft Delete the item
+#     else: 
+#         item.status = 'deleted'
+#         item.save()
+
+#     return redirect('items_list')  # Redirect to the items list page or another appropriate page
+
+    if request.method == 'POST':
+        delete_confirm = request.POST.get('delete_confirm', '')
+        if delete_confirm == 'confirmed':
+            item.delete()
+            return redirect('items_list')  # Redirect to items list after deletion
+        else:
+            # User cancelled deletion, redirect back to item detail page
+            return redirect('item_detail', item_id=item.id)
+
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 

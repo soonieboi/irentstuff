@@ -85,12 +85,25 @@
 
           {% if is_owner %}
           {% if not active_rental %}
+          <script>
+            function confirmDelete() {
+                if (confirm("Are you sure you want to delete this item?")) {
+                    // Set the hidden input value to 'confirmed' if user confirms
+                    document.getElementById('delete-confirm').value = 'confirmed';
+                    // Submit the form
+                    document.getElementById('delete-form').submit();
+                } else {
+                    // If user cancels, do nothing
+                }
+            }
+        </script>
           <p class="card-text">
-          <form class="d-inline" method="post" action="{% url 'delete_item' item_id=item.id %}">
+          <form class="d-inline" id= 'delete-form' method="post" action="{% url 'delete_item' item_id=item.id %}">
             {% csrf_token %}
             <a href="{% url 'edit_item' item_id=item.id %}"><button class="btn btn-primary d-inline"
                 type="button">Edit</button></a>
-            <button class="btn btn-primary d-inline" type="submit">Delete</button>
+            <input type="hidden" id="delete-confirm" name="delete_confirm" value="">
+            <button class="btn btn-primary d-inline" onclick="confirmDelete()">Delete</button>
           </form>
           </p>
           {% endif %}
@@ -152,36 +165,6 @@
             <span class="fs-6">{{ active_rental.get_status_display }}</span>
           </p>
           {% endif %}
-
-          </p>
-        </div>
-        {% if complete_rental %}
-        <div class="card-footer bg-white border-0">
-        <form class="d-inline" method="post" action="{% url 'complete_rental' item_id=item.id %}">
-          {% csrf_token %}
-          <button id="complete_rental" class="btn btn-primary d-inline mb-2" type="submit">Complete Rental</button>
-        </form>
-      </div>
-      {% endif %}
-      {% if cancel_rental %}
-        <div class="card-footer bg-white border-0">
-        <form class="d-inline" method="post" action="{% url 'cancel_rental' item_id=item.id %}">
-          {% csrf_token %}
-          <button id="cancel_rental" class="btn btn-primary d-inline mb-2" type="submit">Cancel Rental</button>
-        </form>
-      </div>
-      {% endif %}
-        {% if accept_rental %}
-        <div class="card-footer bg-white border-0">
-        <form class="d-inline" method="post" action="{% url 'accept_rental' item_id=item.id %}">
-          {% csrf_token %}
-          <div class="mb-2">You have a rental offer for this item!</div>
-          <button id="acceptrental" class="btn btn-primary d-inline mb-2" type="submit">Accept Rental</button>
-        </form>
-      </div>
-      {% endif %}
-
-
 
           </p>
         </div>

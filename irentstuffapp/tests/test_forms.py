@@ -162,6 +162,8 @@ class ItemReviewFormTestCase(TestCase):
 
         # Check if form is valid
         self.assertTrue(form.is_valid())
+        # Check custom_label_from_instance method
+        self.assertEquals(form.custom_label_from_instance(self.rental), f'{self.rental.start_date} to {self.rental.end_date}' )
 
     def test_invalid_form(self):
         # Create form data with invalid rental ID

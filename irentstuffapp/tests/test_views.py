@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.files.base import ContentFile
@@ -9,6 +9,8 @@ from irentstuffapp.models import Item, Category, Message, Rental
 from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm
 from PIL import Image
 from unittest.mock import patch
+from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 import io
 
@@ -420,6 +422,7 @@ class DeleteItemViewTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="testuser", email="test@example.com", password="password123")
+        self.renter = User.objects.create_user(username="testrenter", email="rent@example.com", password="password321")
         self.category = Category.objects.create(name="testcategory")
         self.item = Item.objects.create(
             owner=self.user,
@@ -441,13 +444,35 @@ class DeleteItemViewTestCase(TestCase):
         initial_item_count = Item.objects.count()
 
         # Make a POST request to delete_item view
-        response = self.client.post(reverse("delete_item", kwargs={"item_id": self.item.id}))
+        response = self.client.post(reverse("delete_item", kwargs={"item_id": self.item.id}), {'delete_confirm': 'confirmed'})
 
         # Check that the item was successfully deleted
         self.assertEqual(response.status_code, 302)  # Redirect after successful deletion
         self.assertEqual(Item.objects.count(), initial_item_count - 1)  # Check if item count is decreased
         self.assertIsNone(Item.objects.filter(pk=self.item.id).first())  # Check if item is deleted from database
 
+    def test_delete_item_with_rental(self): 
+        self.rental = Rental.objects.create(
+            renter=self.renter,
+            owner=self.user,
+            item=self.item,
+            start_date=date.today(),
+            end_date=date.today() + timedelta(days=3),
+            status="confirmed",
+        )
+        # Login as the user
+        self.client.login(username="testuser", password="password123")
+
+        # Get the initial count of items
+        initial_item_count = Item.objects.count()
+
+        # Make a POST request to delete_item view
+        response = self.client.post(reverse("delete_item", kwargs={"item_id": self.item.id}))
+
+        # Check that the item was successfully deleted
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Item.objects.count(), initial_item_count)  # Check if item count did not decrease
+        self.assertIsNotNone(Item.objects.filter(pk=self.item.id).first()) 
 
 class ItemDetailViewTestCase(TestCase):
     def setUp(self):
@@ -835,3 +860,5 @@ class ItemMessagesViewTestCase(TestCase):
 
         # Check if the response status code is 200 (OK)
         self.assertEqual(response.status_code, 200)
+
+
