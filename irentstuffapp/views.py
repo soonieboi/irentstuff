@@ -187,15 +187,16 @@ def delete_item(request, item_id):
 # add logic to find if associated rental confirmed/pending
 # also some logic to not allow delete if item alr not existing
 
-#item is deleted or rented
-    if item.status == 'deleted' or item.status == 'rented':
-        messages.error(request, 'You cannot delete a deleted or rented item')
-        return redirect('item_detail', item_id=item.id)
+# #item is deleted or rented
+#     if item.status == 'deleted' or item.status == 'rented':
+#         messages.error(request, 'You cannot delete a deleted or rented item')
+#         return redirect('item_detail', item_id=item.id)
 
-    # Soft Delete the item
-    else: 
-        item.status = 'deleted'
-        item.save()
+#     # Soft Delete the item
+#     else: 
+#         item.status = 'deleted'
+#         item.save()
+    item.delete()
 
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
@@ -459,7 +460,7 @@ def cancel_rental(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
 
     # Check if the logged-in user is owner and status is confirmed
-    cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='confirmed').first()
+    cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='pending').first()
     if cancel_rental_obj:
         if cancel_rental_obj.start_date < timezone.now().date():
             raise ValidationError("You cannot cancel rental after the start date, and status is \'Confirmed\'.")
