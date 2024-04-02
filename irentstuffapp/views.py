@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives    
 from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -21,17 +22,6 @@ def index(request):
     return HttpResponse("Index")
 
 def items_list(request):
-    # Filter items with is_available=True
-    available_items = Item.objects.all().order_by('created_date', 'title')
-    # Apply additional filters based on request.GET parameters
-
-    # Pagination (optional)
-    paginator = Paginator(available_items, 10) # 10 items per page
-    page_obj = paginator.page(1)
-
-    if (request.GET.get('page')):
-        page_number = request.GET.get('page')
-        page_obj = paginator.page(page_number)
 
     search_query = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
@@ -48,9 +38,18 @@ def items_list(request):
         items = items.filter(category__name__iexact=category_filter)
 
     categories = Category.objects.all()
+    items = items.order_by('created_date', 'title')
+
+    # Pagination (optional)
+    paginator = Paginator(items, 10) # 10 items per page
+    page_obj = paginator.page(1)
+
+    if (request.GET.get('page')):
+        page_number = request.GET.get('page')
+        page_obj = paginator.page(page_number)
 
     context = {
-        'items': items,
+        'items': page_obj,
         'categories': categories,
         'searchstr': search_query,
         'selected_category': category_filter,

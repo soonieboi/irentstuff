@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.files.base import ContentFile
