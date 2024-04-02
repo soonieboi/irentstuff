@@ -444,7 +444,7 @@ class DeleteItemViewTestCase(TestCase):
         initial_item_count = Item.objects.count()
 
         # Make a POST request to delete_item view
-        response = self.client.post(reverse("delete_item", kwargs={"item_id": self.item.id}))
+        response = self.client.post(reverse("delete_item", kwargs={"item_id": self.item.id}), {'delete_confirm': 'confirmed'})
 
         # Check that the item was successfully deleted
         self.assertEqual(response.status_code, 302)  # Redirect after successful deletion

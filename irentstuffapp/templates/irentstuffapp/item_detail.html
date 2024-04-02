@@ -85,12 +85,25 @@
 
           {% if is_owner %}
           {% if not active_rental %}
+          <script>
+            function confirmDelete() {
+                if (confirm("Are you sure you want to delete this item?")) {
+                    // Set the hidden input value to 'confirmed' if user confirms
+                    document.getElementById('delete-confirm').value = 'confirmed';
+                    // Submit the form
+                    document.getElementById('delete-form').submit();
+                } else {
+                    // If user cancels, do nothing
+                }
+            }
+        </script>
           <p class="card-text">
-          <form class="d-inline" method="post" action="{% url 'delete_item' item_id=item.id %}">
+          <form class="d-inline" id= 'delete-form' method="post" action="{% url 'delete_item' item_id=item.id %}">
             {% csrf_token %}
             <a href="{% url 'edit_item' item_id=item.id %}"><button class="btn btn-primary d-inline"
                 type="button">Edit</button></a>
-            <button class="btn btn-primary d-inline" type="submit">Delete</button>
+            <input type="hidden" id="delete-confirm" name="delete_confirm" value="">
+            <button class="btn btn-primary d-inline" onclick="confirmDelete()">Delete</button>
           </form>
           </p>
           {% endif %}

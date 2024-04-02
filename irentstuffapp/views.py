@@ -185,7 +185,6 @@ def delete_item(request, item_id):
         return redirect('item_detail', item_id=item.id)
 
 # add logic to find if associated rental confirmed/pending
-# also some logic to not allow delete if item alr not existing
 
     rental = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
     if rental:
@@ -201,7 +200,17 @@ def delete_item(request, item_id):
 #     else: 
 #         item.status = 'deleted'
 #         item.save()
-    item.delete()
+
+#     return redirect('items_list')  # Redirect to the items list page or another appropriate page
+
+    if request.method == 'POST':
+        delete_confirm = request.POST.get('delete_confirm', '')
+        if delete_confirm == 'confirmed':
+            item.delete()
+            return redirect('items_list')  # Redirect to items list after deletion
+        else:
+            # User cancelled deletion, redirect back to item detail page
+            return redirect('item_detail', item_id=item.id)
 
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
@@ -320,7 +329,7 @@ def add_rental(request, item_id, username=""):
         form = RentalForm(request.POST)
         
         # Check if there are active rentals for the item
-        active_rentals = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled")
+        active_rentals = Rental.objects.filter(item=item, status='confirmed')
         if active_rentals.exists():
             messages.error(request, 'There are active rentals for this item. You cannot add a new rental.')
             return redirect('item_detail', item_id=item.id)
