@@ -49,7 +49,7 @@ class RentalForm(forms.ModelForm):
     renterid = forms.CharField(
         label="Renter (ID)",
         max_length=90,
-        widget=forms.TextInput(attrs={'class': 'autocomplete'}),
+        widget=forms.TextInput(attrs={'class': 'form-control autocomplete'}),
         required=True,
     )
 
@@ -57,8 +57,8 @@ class RentalForm(forms.ModelForm):
         model = Rental
         fields = ['start_date', 'end_date']
         widgets = {
-            'start_date': forms.DateInput(attrs={'class': 'datepicker'}),
-            'end_date': forms.DateInput(attrs={'class': 'datepicker'}),
+            'start_date': forms.DateInput(attrs={'class': 'form-control datepicker'}),
+            'end_date': forms.DateInput(attrs={'class': 'form-control datepicker'}),
             'item': forms.HiddenInput(),
             'owner': forms.HiddenInput(),
             'status': forms.HiddenInput()
