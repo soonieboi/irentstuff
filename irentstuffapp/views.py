@@ -22,16 +22,16 @@ def index(request):
 
 def items_list(request):
     # Filter items with is_available=True
-    available_items = Item.objects.all().order_by('created_date', 'title')
+    # available_items = Item.objects.all().order_by('created_date', 'title')
     # Apply additional filters based on request.GET parameters
 
     # Pagination (optional)
-    paginator = Paginator(available_items, 10) # 10 items per page
-    page_obj = paginator.page(1)
+    # paginator = Paginator(available_items, 10) # 10 items per page
+    # page_obj = paginator.page(1)
 
-    if (request.GET.get('page')):
-        page_number = request.GET.get('page')
-        page_obj = paginator.page(page_number)
+    # if (request.GET.get('page')):
+    #     page_number = request.GET.get('page')
+    #     page_obj = paginator.page(page_number)
 
     search_query = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
@@ -55,8 +55,8 @@ def items_list(request):
         'searchstr': search_query,
         'selected_category': category_filter,
         'no_items_message': not items.exists(),
-        'mystuff': request.resolver_match.url_name == 'items_list_my',
-        'page' : page_obj
+        'mystuff': request.resolver_match.url_name == 'items_list_my'
+    #    ,'page' : page_obj
     }
 
     return render(request, 'irentstuffapp/items.html', context)
