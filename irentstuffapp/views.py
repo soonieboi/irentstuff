@@ -7,7 +7,6 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives    
 from django.core.exceptions import ValidationError
-from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
