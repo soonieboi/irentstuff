@@ -30,7 +30,7 @@
         {% elif field.name == 'image' %}
         <div>
             {% if item.image %}
-            <p> Currently: {{ item.image.name }}</p>
+            <p>Currently: <a href="{{ item.image.url }}" target="_blank">{{ item.image.name }}</a></p>
             {% endif %}
             <p> Change: <input type="file" class="form-control-file {% if field.errors %}is-invalid{% endif %}"
                 name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/*"> </p>
