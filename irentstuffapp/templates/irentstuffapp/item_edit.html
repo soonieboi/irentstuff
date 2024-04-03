@@ -13,23 +13,34 @@
     <div class="form-group">
         <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
         {% if field.name == 'description' %}
-        <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}"
+        <div> 
+            <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}"
             name="{{ field.html_name }}" rows="6"
             style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
-        {% elif field.field.widget.input_type == 'select' %}
-        <select class="form-control select-arrow {% if field.errors %}is-invalid{% endif %}"
+        </div>
+        {% elif field.field.widget.input_type == 'select' and field.name != 'image'  %}
+        <div>
+            <select class="form-control select-arrow {% if field.errors %}is-invalid{% endif %}"
             id="{{ field.id_for_label }}" name="{{ field.html_name }}">
             {% for choice in field.field.choices %}
             <option value="{{ choice.0 }}" {% if choice.0 == field.value %}selected{% endif %}>{{ choice.1 }}</option>
             {% endfor %}
         </select>
+        </div>
         {% elif field.name == 'image' %}
-        <div><input type="file" class="form-control-file {% if field.errors %}is-invalid{% endif %}"
-                name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/*" multiple></div>
+        <div>
+            {% if item.image %}
+            <p>Currently: <a href="{{ item.image.url }}" target="_blank">{{ item.image.name }}</a></p>
+            {% endif %}
+            <p> Change: <input type="file" class="form-control-file {% if field.errors %}is-invalid{% endif %}"
+                name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/*"> </p>
+        </div>
         {% else %}
+        <div> 
         <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1"
             name="{{ field.html_name }}"
             style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
+        </div>
         {% endif %}
         {% for error in field.errors %}
         <small class="text-danger">{{ error }}</small>
@@ -39,5 +50,16 @@
     <button class="btn btn-primary col-md-3 my-4" type="submit">Save Changes</button>
 
 </form>
+
+<style>
+    textarea {
+        resize: none;
+    }
+    .select-arrow {
+        -webkit-appearance: menulist-button;
+        -moz-appearance: menulist-button;
+        appearance: menulist-button;
+    }
+</style>
 
 {% endblock %}

@@ -54,8 +54,8 @@ def items_list(request):
         'searchstr': search_query,
         'selected_category': category_filter,
         'no_items_message': not items.exists(),
-        'mystuff': request.resolver_match.url_name == 'items_list_my',
-        'page' : page_obj
+        'mystuff': request.resolver_match.url_name == 'items_list_my'
+    #    ,'page' : page_obj
     }
 
     return render(request, 'irentstuffapp/items.html', context)
