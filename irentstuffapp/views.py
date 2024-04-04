@@ -87,6 +87,7 @@ def item_detail(request, item_id):
     reviews = Review.objects.filter(rental__item=item)
     is_owner = request.user == item.owner
     msgshow = True
+    undos = False
 
     if is_owner:
         #check if there are any messages related to this item
@@ -118,11 +119,10 @@ def item_detail(request, item_id):
                     complete_rental = True
             else:
                 #check if user has undos for this item
+                
                 caretakercount = ItemStatesCaretaker.objects.filter(item=item).count()
                 if caretakercount > 1:
                     undos = True
-                else:
-                    undos = False
 
         else:
             # Check if there is a rental for this item related to this user
