@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.files.base import ContentFile
@@ -9,7 +9,6 @@ from irentstuffapp.models import Item, Category, Message, Rental
 from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm
 from PIL import Image
 from unittest.mock import patch
-
 import io
 
 
@@ -713,6 +712,7 @@ class CancelRentalViewTestCase(TestCase):
         # Check if the rental status is updated to 'cancelled'
         rental = Rental.objects.get(item=self.item)
         self.assertEqual(rental.status, "cancelled")
+        self.assertEqual(date.today(), rental.cancelled_date.date())
 
         # Check that there is 1 email in the outbox
         self.assertEqual(len(mail.outbox), 1)
