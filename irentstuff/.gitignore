@@ -11,3 +11,6 @@ tmp/
 irentstuff/settings.py
 settings.py
 *.pyc
+
+/env
+
