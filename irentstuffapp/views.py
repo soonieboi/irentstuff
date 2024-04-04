@@ -20,21 +20,7 @@ from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewFo
 def index(request):
     return HttpResponse("Index")
 
-#def get_available_items(request):
 def items_list(request):
-    # Filter items with is_available=True
-    #available_items = Item.objects
-    # Apply additional filters based on request.GET parameters
-
-    # Pagination (optional)
-    '''paginator = Paginator(available_items, 10) # 10 items per page
-    if (request.GET.get('page')):
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-
-        # Serialize items
-        serializer = ItemSerializer(page_obj.object_list, many=True)
-    '''
 
     search_query = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
@@ -43,7 +29,6 @@ def items_list(request):
         items = Item.objects.filter(owner=request.user)
     else:
         items = Item.objects.all()
-    # items = Item.objects.all()
 
     if search_query:
         items = items.filter(title__icontains=search_query)
@@ -59,18 +44,16 @@ def items_list(request):
         'searchstr': search_query,
         'selected_category': category_filter,
         'no_items_message': not items.exists(),
-         'mystuff': request.resolver_match.url_name == 'items_list_my',
-
+        'mystuff': request.resolver_match.url_name == 'items_list_my'
     }
 
     return render(request, 'irentstuffapp/items.html', context)
-
 
 @login_required
 def add_item(request):
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES)
-        if form.is_valid():
+        if form.is_valid():  
             item = form.save(commit=False)
             item.owner = request.user  # Set the item's creator to the logged-in user
             item.created_date = timezone.now() 
@@ -155,8 +138,6 @@ def item_detail(request, item_id):
             if review_obj:
                 make_review = True
                 
-
-
     return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews})
 
 @login_required
@@ -187,8 +168,7 @@ def delete_item(request, item_id):
         # Optionally, you can handle unauthorized access here
         return redirect('item_detail', item_id=item.id)
 
-# add logic to find if associated rental confirmed/pending
-
+    # add logic to find if associated rental confirmed/pending
     rental = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
     if rental:
         messages.error(request, 'You cannot delete an item when rental status is Pending or Confirmed!')
@@ -214,7 +194,6 @@ def delete_item(request, item_id):
         else:
             # User cancelled deletion, redirect back to item detail page
             return redirect('item_detail', item_id=item.id)
-
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 

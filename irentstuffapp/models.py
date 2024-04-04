@@ -71,4 +71,4 @@ class Message(models.Model):
 
     def __str__(self):
         return f'{self.subject} - {self.sender} to {self.recipient} about {self.item.title} ({self.enquiring_user.username})'
-
+        

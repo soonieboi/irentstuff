@@ -11,7 +11,6 @@ from PIL import Image
 from unittest.mock import patch
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-
 import io
 
 
@@ -738,6 +737,7 @@ class CancelRentalViewTestCase(TestCase):
         # Check if the rental status is updated to 'cancelled'
         rental = Rental.objects.get(item=self.item)
         self.assertEqual(rental.status, "cancelled")
+        self.assertEqual(date.today(), rental.cancelled_date.date())
 
         # Check that there is 1 email in the outbox
         self.assertEqual(len(mail.outbox), 1)
