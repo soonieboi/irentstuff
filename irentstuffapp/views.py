@@ -89,6 +89,7 @@ def add_review(request, item_id):
 
     return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item':item})
 
+
 @login_required
 @apply_discount
 def item_detail(request, item_id):
