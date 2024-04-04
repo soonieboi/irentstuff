@@ -19,16 +19,14 @@ class PasswordChangeForm(forms.Form):
 class ItemEditForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit']
+        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit', 'discount_percentage']
 
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit']
+        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit', 'discount_percentage']
 
 class ItemReviewForm(forms.ModelForm):
-
-    
     class Meta:
         model = Review
         fields = ['rental','rating','comment']

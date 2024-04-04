@@ -46,7 +46,15 @@
         <div class="card-footer border-0 bg-white pt-0 pb-4">
           <div class="card-text pb-2">
             <div class="small">Rental Price (per day):</div>
-            <div class="fs-5">${{ item.price_per_day }}</div>
+            {% if item.discount_percentage > 0 %}
+            <div class="fs-4">
+              <s>${{ item.price_per_day }}</s> 
+              <span style="font-size: 1em; color:red; ">${{ item.discounted_price|floatformat:2 }}</span>
+              <span style="font-size: 0.8em; font-style: italic; color:red; "> after {{ item.discount_percentage }}% off</span>
+            </div>
+            {% else %}
+            <div class="fs-4">${{ item.price_per_day }}</div>
+            {% endif %}
           </div>
           <div class="card-text">
             <div class="small">Buy Price:</div>
