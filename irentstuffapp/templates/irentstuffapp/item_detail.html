@@ -102,6 +102,11 @@
             {% csrf_token %}
             <a href="{% url 'edit_item' item_id=item.id %}"><button class="btn btn-primary d-inline"
                 type="button">Edit</button></a>
+
+              {% if undos %}
+              <a href="{% url 'undo_item' item_id=item.id %}"><button class="btn btn-primary d-inline"
+                  type="button">Undo</button></a>
+                {% endif %}
             <input type="hidden" id="delete-confirm" name="delete_confirm" value="">
             <button class="btn btn-primary d-inline" onclick="confirmDelete()">Delete</button>
           </form>
