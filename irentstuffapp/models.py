@@ -1,15 +1,23 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils import timezone 
+from django.utils import timezone
+from django.core.validators import MinValueValidator
 
+
+#extend Decimal to prevent negative values
+class PositiveDecimalField(models.DecimalField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.validators.append(MinValueValidator(0.01, message='Value should be at least 0.01.'))
+        
 class Item(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True)
     condition = models.CharField(max_length=255, choices=[('excellent', 'Excellent'), ('good', 'Good'), ('fair', 'Fair'), ('poor', 'Poor')])
-    price_per_day = models.DecimalField(max_digits=10, decimal_places=2)
-    deposit = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    price_per_day = PositiveDecimalField(max_digits=10, decimal_places=2)
+    deposit = PositiveDecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     image = models.ImageField(upload_to='item_images/')
     created_date = models.DateTimeField(blank=True)
     deleted_date = models.DateTimeField(blank=True, null=True)

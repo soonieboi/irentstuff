@@ -1,1 +1,13 @@
+# Byte-compiled
+__pycache__/
+Pipfile
+Pipfile.lock
+
+.DS_Store
+
+# Django stuff:
+db.sqlite3
+tmp/
+irentstuff/settings.py
 settings.py
+*.pyc
