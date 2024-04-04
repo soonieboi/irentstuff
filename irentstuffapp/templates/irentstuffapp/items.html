@@ -60,19 +60,7 @@
   </div>
 
   {% endfor %}
-
-    <div style="text-align: center;">
-      {% if page.has_previous %}
-      <a href="?page=1" style="display: inline-block; margin-right: 10px;">First</a>
-      <a href="?page={{ page.previous_page_number }}" style="display: inline-block; margin-right: 20px;">Previous</a>
-      {% endif %}
-
-      {% if page.has_next %}
-      <a href="?page={{ page.next_page_number }}" style="display: inline-block; margin-right: 10px;">Next</a>
-      <a href="?page={{ page.paginator.num_pages }}" style="display: inline-block; margin-right: 20px;">Last</a>
-      {% endif %}
-    </div>
-    {% endif %}
+  {% endif %}
 
   </div>
   {% endblock %}
