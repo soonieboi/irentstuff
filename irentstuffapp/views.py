@@ -535,16 +535,16 @@ class InterestDisplayTemplate:
 
 class Top3CategoryDisplay(InterestDisplayTemplate):
     def get_items(self, user):
-        return Items.objects.filter(category= "Games") #temp code, to get the 3 categories
+        return Item.objects.filter(category= "Games") #temp code, to get the 3 categories
 
 class ByEndDateDisplay(InterestDisplayTemplate):
     def get_items(self, user):
-        return Items.objects.filter( Q(start_date__gt = timezone.now()) & Q(end_date__lt = (timezone.now() + datetime.timedelta(days=10)) )) 
+        return Item.objects.filter( Q(start_date__gt = timezone.now()) & Q(end_date__lt = (timezone.now() + datetime.timedelta(days=10)) )) 
         #temp code, to get the end date
 
 class ByPricePerDay(InterestDisplayTemplate):
     def get_items(self, user):
-        return Items.objects.filter( Q(price_per_day__gt = 0) & Q(price_per_day__lt = 10) )
+        return Item.objects.filter( Q(price_per_day__gt = 0) & Q(price_per_day__lt = 10) )
         #temp code, to get the end date
 
 
