@@ -9,10 +9,9 @@ from irentstuffapp.models import Item, Category, Message, Rental
 from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm
 from PIL import Image
 from unittest.mock import patch
-from django.utils import timezone
 from django.core.exceptions import ValidationError
-
 import io
+import os
 
 
 class InboxViewTestCase(TestCase):
@@ -348,6 +347,15 @@ class AddItemViewTestCase(TestCase):
         self.assertEqual(Item.objects.first().owner, self.user)  # Check that item owner is correct
         self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": Item.objects.first().id}))
 
+    def tearDown(self) -> None:
+        # Get the path to the image file
+        image_path = Item.objects.first().image.path
+
+        # Check if the file exists and delete it
+        if os.path.exists(image_path):
+            os.remove(image_path)
+        return super().tearDown()
+
 
 class EditItemViewTestCase(TestCase):
     def create_image(self, name="test_image.jpg", size=(1, 1), image_mode="RGB", image_format="JPEG"):
@@ -377,6 +385,7 @@ class EditItemViewTestCase(TestCase):
             created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
             deleted_date=None,
         )
+        self.image1_path = self.item.image.path
 
     def test_edit_item_authenticated_owner(self):
         # Login as the item owner
@@ -417,12 +426,21 @@ class EditItemViewTestCase(TestCase):
         self.assertEqual(self.item.deposit, 100.00)
         self.assertIn(self.image2.name.split(".")[0], self.item.image.name)
 
+    def tearDown(self):
+        # Get the paths to the image files
+        image2_path = self.item.image.path
+
+        # Check if the files exist and delete them
+        if os.path.exists(image2_path):
+            os.remove(image2_path)        
+        if os.path.exists(self.image1_path):
+            os.remove(self.image1_path)
+
 
 class DeleteItemViewTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="testuser", email="test@example.com", password="password123")
-        self.renter = User.objects.create_user(username="testrenter", email="rent@example.com", password="password321")
         self.category = Category.objects.create(name="testcategory")
         self.item = Item.objects.create(
             owner=self.user,
@@ -452,6 +470,8 @@ class DeleteItemViewTestCase(TestCase):
         self.assertIsNone(Item.objects.filter(pk=self.item.id).first())  # Check if item is deleted from database
 
     def test_delete_item_with_rental(self): 
+        self.renter = User.objects.create_user(username="testrenter", email="rent@example.com", password="password321")
+
         self.rental = Rental.objects.create(
             renter=self.renter,
             owner=self.user,

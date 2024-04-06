@@ -203,18 +203,6 @@ def delete_item(request, item_id):
         messages.error(request, 'You cannot delete an item when rental status is Pending or Confirmed!')
         return redirect('item_detail', item_id=item.id)
 
-# #item is deleted or rented
-#     if item.status == 'deleted' or item.status == 'rented':
-#         messages.error(request, 'You cannot delete a deleted or rented item')
-#         return redirect('item_detail', item_id=item.id)
-
-#     # Soft Delete the item
-#     else: 
-#         item.status = 'deleted'
-#         item.save()
-
-#     return redirect('items_list')  # Redirect to the items list page or another appropriate page
-
     if request.method == 'POST':
         delete_confirm = request.POST.get('delete_confirm', '')
         if delete_confirm == 'confirmed':
@@ -223,7 +211,6 @@ def delete_item(request, item_id):
         else:
             # User cancelled deletion, redirect back to item detail page
             return redirect('item_detail', item_id=item.id)
-
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 
