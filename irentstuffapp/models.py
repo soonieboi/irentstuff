@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils import timezone
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 #extend Decimal to prevent negative values
@@ -21,10 +20,23 @@ class Item(models.Model):
     image = models.ImageField(upload_to='item_images/')
     created_date = models.DateTimeField(blank=True)
     deleted_date = models.DateTimeField(blank=True, null=True)
+    discount_percentage = models.PositiveIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text='Enter a number between 0 and 100 for the discount percentage'
+    )
 
-    
     def __str__(self):
         return self.title
+    
+    def apply_discount(func):
+        def wrapper(request, *args, **kwargs):
+            item = func(request, *args, **kwargs)
+            if item.discount_percentage > 0:
+                discounted_price = item.price * (1 - item.discount_percentage / 100)
+                item.discounted_price = discounted_price
+            return item
+        return wrapper
     
     def create_memento(self):
         """

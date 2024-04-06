@@ -57,8 +57,16 @@
           {% endif %}
 
           <p class="card-text">
-          <div class="fs-6">Rental Price (per day):</div>
-          <div class="fs-4">${{ item.price_per_day }}</div>
+            <div class="fs-6">Rental Price (per day):</div>
+            {% if item.discount_percentage > 0 %}
+              <div class="fs-4">
+                <s>${{ item.price_per_day }}</s> 
+                <span style="font-size: 1em; color:red; ">${{ item.discounted_price|floatformat:2 }}</span>
+                <span style="font-size: 0.8em; font-style: italic; color:red; "> after {{ item.discount_percentage }}% off</span>
+              </div>
+              {% else %}
+            <div class="fs-4">${{ item.price_per_day }}</div>
+            {% endif %}
           </p>
 
           <p class="card-text">
