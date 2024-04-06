@@ -168,14 +168,20 @@ def delete_item(request, item_id):
         # Optionally, you can handle unauthorized access here
         return redirect('item_detail', item_id=item.id)
 
-# add logic to find if associated rental confirmed/pending
-# also some logic to not allow delete if item alr not existing
+    # add logic to find if associated rental confirmed/pending
+    rental = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
+    if rental:
+        messages.error(request, 'You cannot delete an item when rental status is Pending or Confirmed!')
+        return redirect('item_detail', item_id=item.id)
 
-    # Delete the item
-    try: 
-        item.delete()
-    except Exception as e:
-        messages.error(request, 'Error deleting item: ' + item.title )
+    if request.method == 'POST':
+        delete_confirm = request.POST.get('delete_confirm', '')
+        if delete_confirm == 'confirmed':
+            item.delete()
+            return redirect('items_list')  # Redirect to items list after deletion
+        else:
+            # User cancelled deletion, redirect back to item detail page
+            return redirect('item_detail', item_id=item.id)
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 
