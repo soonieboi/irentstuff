@@ -1,0 +1,46 @@
+{% extends 'irentstuffapp/base.html' %}
+{% block content %}
+
+<center>
+    <h2 class="p-3">User Interests</h2>
+</center>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <p>Please select your favourite categories for rental? (Max 3)</p>
+                <form method="post" action="" onsubmit="return check()">
+                    {% csrf_token %}
+                    {% for category in categories %}
+                        <input type="checkbox" id="category{{ forloop.counter }}" name="category" value="{{ category.id }}">
+                        <label for="category{{ forloop.counter }}"> {{ category }} </label><br>
+                    {% endfor %}
+                    <input type="hidden" id="selected_categories" name="selected_categories" value="">
+                    <div id="error_message" style="color: red;"></div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script> <!-- Script to fix, not working, check chatgpt-->
+    function check() {
+        var checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        var selectCount = checkboxes.length;
+        var selectedCategoriesInput = document.getElementById('selected_categories');
+        var errorMessage = document.getElementById('error_message');
+
+        if (selectCount > 3) {
+            errorMessage.innerText = 'Please select only three categories.';
+            return false; // Prevent form submission
+        } else {
+            errorMessage.innerText = ''; 
+            selectedCategoriesInput.value = Array.from(checkboxes).map(cb => cb.value).join(',');
+            return true; // Allow form submission
+        }
+    }
+</script>
+
+
+{% endblock %}

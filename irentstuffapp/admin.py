@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Item, Category, Rental, Review, Message
+from .models import Item, Category, Rental, Review, Message, Interest
 
 #admin.site.register(Item)
 @admin.register(Item)
@@ -27,3 +27,13 @@ class MessageAdmin(admin.ModelAdmin):
     list_filter = ("item", )
     search_fields = ("content", "enquiring_user__username",)
 
+@admin.register(Interest)
+class InterestAdmin(admin.ModelAdmin):
+    list_display = ('user', 'created_date', 'get_categories_display')
+    list_filter = ("user", )
+    search_fields = ("user__username", "categories__name",)
+
+    def get_categories_display(self, obj):
+        return ", ".join([category.name for category in obj.categories.all()])
+    
+    get_categories_display.short_description = 'Categories'

@@ -11,10 +11,10 @@ from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils import timezone 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.conf import settings
-from .models import Item, Rental, Message, Review, Category
-from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
+from .models import Item, Rental, Message, Review, Category, Interest
+from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, InterestForm
 
 
 def index(request):
@@ -513,3 +513,52 @@ def logout_user(request):
     logout(request)
     return redirect('/')
     
+
+ # 3 template classes: Top3Categories, ByEndDate, ByPricePerDay, ByDeposit  
+ # forms to take 3 qns to cater to the 3 classes (cat to get dynamically from db)
+ # to check if >3 boxes are selected, throw error if so, less than 3 just mark the rest as 'none'
+ # verify the js check also
+ # 
+class InterestDisplayTemplate:
+    def get(self, request):
+        items = Item.objects.all()
+        return render(request, 'items_list.html', {'items': items})
+
+    def get_items(self, user):
+        raise NotImplementedError("Subclasses must implement this method")
+
+class Top3CategoryDisplay(InterestDisplayTemplate):
+    def get_items(self, user):
+        return Items.objects.filter(category= "Games") #temp code, to get the 3 categories
+
+class ByEndDateDisplay(InterestDisplayTemplate):
+    def get_items(self, user):
+        return Items.objects.filter( Q(start_date__gt = timezone.now()) & Q(end_date__lt = (timezone.now() + datetime.timedelta(days=10)) )) 
+        #temp code, to get the end date
+
+class ByPricePerDay(InterestDisplayTemplate):
+    def get_items(self, user):
+        return Items.objects.filter( Q(price_per_day__gt = 0) & Q(price_per_day__lt = 10) )
+        #temp code, to get the end date
+
+
+
+@login_required
+def category_interest(request):  #views to fix as well, to get id instead of value
+    categories = Category.objects.all()
+    
+    context = {
+        'categories': categories
+    }
+
+    if request.method == 'POST':
+        selected_categories = request.POST.get('selected_categories')
+        if selected_categories:
+            selected_categories_list = selected_categories.split(',')
+            user_interest = Interest.objects.create(user=request.user, created_date=timezone.now())
+            user_interest.categories.add(*selected_categories_list)
+            print(user_interest)
+            user_interest.save()
+            return redirect('items_list') 
+
+    return render(request, 'irentstuffapp/interest.html', context)

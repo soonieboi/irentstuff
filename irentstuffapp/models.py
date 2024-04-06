@@ -71,3 +71,11 @@ class Message(models.Model):
     def __str__(self):
         return f'{self.subject} - {self.sender} to {self.recipient} about {self.item.title} ({self.enquiring_user.username})'
         
+class Interest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    categories = models.ManyToManyField(Category)
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        categories_name = ', '.join([category.name for category in self.categories.all()])
+        return f'{self.user} is interested in {categories_name}.'
