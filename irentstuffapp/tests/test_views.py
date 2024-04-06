@@ -9,7 +9,6 @@ from irentstuffapp.models import Item, Category, Message, Rental
 from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm
 from PIL import Image
 from unittest.mock import patch
-from django.utils import timezone
 from django.core.exceptions import ValidationError
 import io
 
@@ -421,7 +420,6 @@ class DeleteItemViewTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="testuser", email="test@example.com", password="password123")
-        self.renter = User.objects.create_user(username="testrenter", email="rent@example.com", password="password321")
         self.category = Category.objects.create(name="testcategory")
         self.item = Item.objects.create(
             owner=self.user,
@@ -451,6 +449,8 @@ class DeleteItemViewTestCase(TestCase):
         self.assertIsNone(Item.objects.filter(pk=self.item.id).first())  # Check if item is deleted from database
 
     def test_delete_item_with_rental(self): 
+        self.renter = User.objects.create_user(username="testrenter", email="rent@example.com", password="password321")
+
         self.rental = Rental.objects.create(
             renter=self.renter,
             owner=self.user,

@@ -42,7 +42,6 @@ class Rental(models.Model):
     complete_date = models.DateTimeField(blank=True, null=True)
     cancelled_date = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=255, choices=[('pending', 'Pending'), ('confirmed', 'Confirmed'), ('completed', 'Completed'), ('cancelled', 'Cancelled')], default='pending')
-    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)], null=True)
     # You can add additional fields like rating, payment details, etc.
 
     def __str__(self):
