@@ -132,7 +132,8 @@ class Rental(models.Model):
     complete_date = models.DateTimeField(blank=True, null=True)
     cancelled_date = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=255, choices=[('pending', 'Pending'), ('confirmed', 'Confirmed'), ('completed', 'Completed'), ('cancelled', 'Cancelled')], default='pending')
-    # You can add additional fields like rating, payment details, etc.
+    apply_loyalty_discount = models.BooleanField(default=False, help_text='Apply loyalty discount for this rental')
+
 
     def __str__(self):
         return f'{self.item} ({self.owner}, {self.renter}): {self.start_date} - {self.end_date}'

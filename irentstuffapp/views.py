@@ -15,12 +15,13 @@ from django.db.models import Count
 from django.conf import settings
 from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
-from .decorators import apply_discount
+from .decorators import apply_standard_discount, apply_loyalty_discount
+from datetime import datetime
 
 def index(request):
     return HttpResponse("Index")
 
-@apply_discount
+@apply_standard_discount
 def items_list(request):
 
     search_query = request.GET.get('search', '')
@@ -39,11 +40,12 @@ def items_list(request):
 
     categories = Category.objects.all()
 
-    # items =Item.objects.all()
-    # for item in items:
-    #     if item.discount_percentage > 0:
-    #         discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
-    #         item.discounted_price = discounted_price
+    for item in items:
+        if item.discount_percentage > 0:
+            discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
+            item.discounted_price = discounted_price
+        else:
+            item.discounted_price = item.price_per_day
 
     context = {
         'items': items,
@@ -89,8 +91,7 @@ def add_review(request, item_id):
 
     return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item':item})
 
-@login_required
-
+# @apply_discount
 def item_detail(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
     reviews = Review.objects.filter(rental__item=item)
@@ -597,4 +598,4 @@ def login_user(request):
 def logout_user(request):
     logout(request)
     return redirect('/')
-    
+
