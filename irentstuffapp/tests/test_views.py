@@ -382,6 +382,7 @@ class EditItemViewTestCase(TestCase):
             condition="excellent",
             price_per_day=10.00,
             deposit=50.00,
+            discount_percentage=0,
             image=self.image1,
             created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
             deleted_date=None,
@@ -400,6 +401,7 @@ class EditItemViewTestCase(TestCase):
             "condition": "good",
             "price_per_day": 20.00,
             "deposit": 100.00,
+            "discount_percentage": 5,
             "image": self.image2,
             
         }
@@ -411,13 +413,14 @@ class EditItemViewTestCase(TestCase):
             follow=True,
         )
 
+
         form = ItemEditForm(data=form_data, files={"image": self.image2})
 
         # Assert that the form is valid
         self.assertTrue(f"Form is valid: {form.is_valid()}")
 
         # Check if the item was successfully edited
-        self.assertEqual(response.status_code, 200)  # Check if redirected to item detail page
+        self.assertEqual(response.status_code, 302)  # Check if redirected to item detail page
         self.item.refresh_from_db()  # Refresh the item from the database
 
         # Check if fields were updated
@@ -427,6 +430,7 @@ class EditItemViewTestCase(TestCase):
         self.assertEqual(self.item.price_per_day, 20.00)
         self.assertEqual(self.item.deposit, 100.00)
         self.assertIn(self.image2.name.split(".")[0], self.item.image.name)
+
 
     def tearDown(self):
         # Get the paths to the image files
