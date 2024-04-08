@@ -59,6 +59,7 @@ def items_list(request):
     return render(request, 'irentstuffapp/items.html', context)
 
 @login_required
+@apply_loyalty_discount
 def add_item(request):
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES)
@@ -91,7 +92,7 @@ def add_review(request, item_id):
 
     return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item':item})
 
-# @apply_discount
+@apply_loyalty_discount
 def item_detail(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
     reviews = Review.objects.filter(rental__item=item)
@@ -367,6 +368,7 @@ def inbox(request):
     return render(request, 'irentstuffapp/inbox.html', {'grouped_messages': grouped_messages})
 
 @login_required
+@apply_loyalty_discount
 def add_rental(request, item_id, username=""):
     item = get_object_or_404(Item, pk=item_id)
 
