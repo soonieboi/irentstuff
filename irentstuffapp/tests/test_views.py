@@ -332,6 +332,7 @@ class AddItemViewTestCase(TestCase):
             "condition": "excellent",
             "price_per_day": 10.00,
             "deposit": 50.00,
+            "discount_percentage": 10,
         }
 
         # Make a POST request to add_item view with form data
@@ -400,6 +401,7 @@ class EditItemViewTestCase(TestCase):
             "price_per_day": 20.00,
             "deposit": 100.00,
             "image": self.image2,
+            
         }
 
         # Make a POST request to edit_item view with form data
