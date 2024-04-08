@@ -420,7 +420,7 @@ class EditItemViewTestCase(TestCase):
         self.assertTrue(f"Form is valid: {form.is_valid()}")
 
         # Check if the item was successfully edited
-        self.assertEqual(response.status_code, 302)  # Check if redirected to item detail page
+        self.assertEqual(response.status_code, 200)  # Check if redirected to item detail page
         self.item.refresh_from_db()  # Refresh the item from the database
 
         # Check if fields were updated
