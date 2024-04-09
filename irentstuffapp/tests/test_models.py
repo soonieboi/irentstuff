@@ -128,6 +128,7 @@ class RentalModelTestCase(TestCase):
         self.assertIsNone(rental.complete_date)
         self.assertIsNone(rental.cancelled_date)
         self.assertEquals(rental.status, "confirmed")
+        self.assertEquals(str(rental), f'{self.item} ({self.owner}, {self.renter}): {self.rental.start_date} - {self.rental.end_date}')
 
 
 class ReviewModelTestCase(TestCase):
@@ -161,7 +162,7 @@ class ReviewModelTestCase(TestCase):
             owner=self.owner,
             renter=self.renter,
             item=self.item,
-            start_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            start_date=datetime(2024, 2, 7, tzinfo=timezone.utc).date(),
             end_date=(
                 datetime(2024, 2, 7, tzinfo=timezone.utc) + timedelta(days=7)
             ).date(),
@@ -194,6 +195,7 @@ class ReviewModelTestCase(TestCase):
         self.assertEquals(review.rating, 5)
         self.assertEquals(review.comment, "Test comment")
         self.assertIsNotNone(review.created_date)
+        self.assertEquals(str(review), "Test comment")
 
 
 class MessageModelTestCase(TestCase):
@@ -252,3 +254,6 @@ class MessageModelTestCase(TestCase):
         self.assertEquals(message.subject, "Test Message Subject")
         self.assertEquals(message.content, "Test Message Content")
         self.assertFalse(message.is_read)
+        self.assertEquals(str(message),
+            "Test Message Subject - renter to owner about Test Item (enquirer)",
+        )

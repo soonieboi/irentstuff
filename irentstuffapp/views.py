@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404, HttpResponseForbidden, HttpResponseBadRequest
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -13,7 +13,7 @@ from django.utils.html import strip_tags
 from django.utils import timezone 
 from django.db.models import Count
 from django.conf import settings
-from .models import Item, Rental, Message, Review, Category
+from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
 
 
@@ -58,6 +58,7 @@ def add_item(request):
             item.owner = request.user  # Set the item's creator to the logged-in user
             item.created_date = timezone.now() 
             item.save()
+            save_state(request, item.id)
             return redirect('item_detail', item_id=item.id)  # Redirect to item detail page
     else:
         form = ItemForm()
@@ -86,6 +87,7 @@ def item_detail(request, item_id):
     reviews = Review.objects.filter(rental__item=item)
     is_owner = request.user == item.owner
     msgshow = True
+    undos = False
 
     if is_owner:
         #check if there are any messages related to this item
@@ -115,6 +117,12 @@ def item_detail(request, item_id):
                 #can complete?
                 elif active_rentals_obj.status=='confirmed':
                     complete_rental = True
+            else:
+                #check if user has undos for this item
+                
+                caretakercount = ItemStatesCaretaker.objects.filter(item=item).count()
+                if caretakercount > 1:
+                    undos = True
 
         else:
             # Check if there is a rental for this item related to this user
@@ -138,7 +146,8 @@ def item_detail(request, item_id):
             if review_obj:
                 make_review = True
                 
-    return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews})
+    return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews, 'undos':undos})
+
 
 @login_required
 def edit_item(request, item_id):
@@ -153,6 +162,10 @@ def edit_item(request, item_id):
         form = ItemEditForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
+
+            # Call save_state to save the current state of the item
+            save_state(request, item_id)
+
             return redirect('item_detail', item_id=item.id)
     else:
         form = ItemEditForm(instance=item)
@@ -168,17 +181,75 @@ def delete_item(request, item_id):
         # Optionally, you can handle unauthorized access here
         return redirect('item_detail', item_id=item.id)
 
-# add logic to find if associated rental confirmed/pending
-# also some logic to not allow delete if item alr not existing
+    # add logic to find if associated rental confirmed/pending
+    rental = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
+    if rental:
+        messages.error(request, 'You cannot delete an item when rental status is Pending or Confirmed!')
+        return redirect('item_detail', item_id=item.id)
 
-    # Delete the item
-    try: 
-        item.delete()
-    except Exception as e:
-        messages.error(request, 'Error deleting item: ' + item.title )
+    if request.method == 'POST':
+        delete_confirm = request.POST.get('delete_confirm', '')
+        if delete_confirm == 'confirmed':
+            item.delete()
+            return redirect('items_list')  # Redirect to items list after deletion
+        else:
+            # User cancelled deletion, redirect back to item detail page
+            return redirect('item_detail', item_id=item.id)
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 
+
+@login_required
+def save_state(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+
+    # Check if the logged-in user is the owner of the item
+    if request.user != item.owner:
+        # Optionally, you can handle unauthorized access here
+        return HttpResponseForbidden()
+
+    caretaker = ItemStatesCaretaker.objects.filter(item=item).first()
+    if not caretaker:
+        caretaker = ItemStatesCaretaker(item=item)
+
+    caretaker.save_state()  # Save the current state of the item
+
+    #messages.success(request, 'State saved successfully!')
+    return redirect('item_detail', item_id=item_id)
+
+@login_required
+def restore_state(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+
+    # Check if the logged-in user is the owner of the item
+    if request.user != item.owner:
+        # Optionally, you can handle unauthorized access here
+        return HttpResponseForbidden()
+
+    # don't delete if only 1 state, that is the original state
+    caretakercount = ItemStatesCaretaker.objects.filter(item=item).count()
+
+    if caretakercount < 2:
+        messages.error(request, 'No previous changes found for this item.')
+        return redirect('item_detail', item_id=item_id)
+
+    caretakerdel = ItemStatesCaretaker.objects.filter(item=item).order_by('-datetime_saved').first()
+
+    if caretakerdel:
+        caretakerdel.delete()
+
+    caretaker = ItemStatesCaretaker.objects.filter(item=item).order_by('-datetime_saved').first()
+    if not caretaker or not caretaker.memento:
+        messages.error(request, 'No changes found for this item.')
+        return redirect('item_detail', item_id=item_id)
+
+    caretaker.restore_state()  # Restore the item to the previous state
+
+    messages.success(request, 'Undo was successful!')
+    return redirect('item_detail', item_id=item_id)
+
+
+    
 @login_required
 def item_messages(request, item_id, userid=0):
 
