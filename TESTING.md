@@ -28,6 +28,12 @@ class CategoryModelTestCase(TestCase):
 self.assertEquals(category.name, "testcategory")
 self.assertEquals(str(category), "testcategory")
 ```
+6. Tear down any persistent files or env variables that were set up, e.g.:
+```
+    def tearDown(self) -> None:
+        # Insert tear down code here
+        return super().tearDown()
+```
 
 # **How iRentStuff is tested**
 As iRentStuff is written with a thin-model fat-view approach, tests are treated as such:
