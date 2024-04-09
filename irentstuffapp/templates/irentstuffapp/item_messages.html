@@ -26,11 +26,19 @@
   <ul class="list-group p-0 m-0">
     {% for message in item_messages %}
 
-    {% if message.sender.id == request.user.id %}
-
-    <li class="align-self-end list-group-item m-1 bg-success text-white rounded v-70">
+    {% if not message.sender %}
+    <li class="list-group-item m-1 bg-info text-light align-items-start rounded v-70">
+      <div class="text-dark"><strong></strong>Admin</strong></div>
       <div>{{ message.content }}</div>
-      {% else %}
+
+
+  {% elif message.sender.id == request.user.id %}
+
+  <li class="align-self-end list-group-item m-1 bg-success text-white rounded v-70">
+    <div>{{ message.content }}</div>
+
+    
+    {% else %}
     <li class="list-group-item m-1 align-items-start rounded v-70">
       <div class="text-success"><strong></strong>{{ message.sender.username }}</strong></div>
       <div>{{ message.content }}</div>

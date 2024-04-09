@@ -2,6 +2,109 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.core.validators import MinValueValidator
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.utils import timezone
+from django.conf import settings
+from abc import ABC, abstractmethod
+from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives  
+
+def send_email(subject, message, email_to):
+    email_from = settings.DEFAULT_FROM_EMAIL
+    plain_message = strip_tags(message)
+    email = EmailMultiAlternatives(
+        subject,
+        plain_message,
+        email_from,
+        [email_to],
+    )
+    email.attach_alternative(message, "text/html")
+    email.send()
+
+# Define the Observer interface
+class Observer(ABC):
+    @abstractmethod
+    def update(self, rental):
+        pass
+
+# Implement concrete Observers (classes responsible for sending emails and messages)
+class EmailSender(Observer):
+    def update(self, rental):
+        # Logic to send email to the renter or owner based on rental state change
+        print("email sender received update from rental " + rental.item.title + " " + rental.status + " " + rental.renter.username + " " + rental.owner.username)
+
+        if rental.status == 'pending':
+            subject = 'iRentStuff.app - You added a Rental'
+            html_message = render_to_string('emails/rental_added_email.html', {'rental': rental})
+            send_email(subject, html_message, rental.owner.email)
+
+            subject2 = 'iRentStuff.app - You have a Rental Offer'
+            html_message2 = render_to_string('emails/rental_added_email2.html', {'rental': rental})
+            send_email(subject2, html_message2, rental.renter.email)
+
+        elif rental.status == 'confirmed':           
+            subject = 'iRentStuff.app - you have a Rental Acceptance'
+            html_message = render_to_string('emails/rental_confirmed_email.html', {'rental': rental})
+            send_email(subject, html_message, rental.owner.email)
+
+            subject2 = 'iRentStuff.app - You accepted a Rental Offer'
+            html_message2 = render_to_string('emails/rental_confirmed_email2.html', {'rental': rental})
+            send_email(subject2, html_message2, rental.renter.email)
+
+        elif rental.status == 'completed':
+            subject = 'iRentStuff.app - you have set a rental to Complete'
+            html_message = render_to_string('emails/rental_completed_email.html', {'rental': rental,})
+            send_email(subject, html_message, rental.owner.email)
+
+        elif rental.status == 'cancelled': 
+            subject = 'iRentStuff.app - you have cancelled a rental'
+            html_message = render_to_string('emails/rental_cancelled_email.html', {'rental': rental,})
+            send_email(subject, html_message, rental.owner.email)
+
+class MessageSender(Observer):
+    def update(self, rental):
+        # Logic to send message to the renter or owner based on rental state change
+
+        if rental.status == 'pending':
+            message = Message()
+            message.item = rental.item
+            message.enquiring_user = rental.renter
+            message.sender = None
+            message.recipient = rental.renter
+            message.subject = 'Admin'
+            message.content = 'Rental has been offered. Period of rental is from ' + str(rental.start_date) + ' to ' + str(rental.end_date)
+            message.timestamp = timezone.now()
+            message.save()
+        elif rental.status == 'confirmed':
+            message = Message()
+            message.item = rental.item
+            message.enquiring_user = rental.renter
+            message.sender = None
+            message.recipient = rental.owner
+            message.subject = 'Admin'
+            message.content = 'Rental has been accepted. Period of rental is from ' + str(rental.start_date) + ' to ' + str(rental.end_date)
+            message.timestamp = timezone.now()
+            message.save()
+        elif rental.status == 'completed':
+            message = Message()
+            message.item = rental.item
+            message.enquiring_user = rental.renter
+            message.sender = None
+            message.recipient = rental.renter
+            message.subject = 'Admin'
+            message.content = 'Rental has been completed. Period of rental is from ' + str(rental.start_date) + ' to ' + str(rental.end_date)
+            message.timestamp = timezone.now()
+            message.save()
+        elif rental.status == 'cancelled':
+            message = Message()
+            message.item = rental.item
+            message.enquiring_user = rental.renter
+            message.sender = None
+            message.recipient = rental.renter
+            message.subject = 'Admin'
+            message.content = 'Rental has been cancelled.'
+            message.timestamp = timezone.now()
+            message.save()
 
 
 #extend Decimal to prevent negative values
@@ -124,6 +227,39 @@ class Rental(models.Model):
 
     def __str__(self):
         return f'{self.item} ({self.owner}, {self.renter}): {self.start_date} - {self.end_date}'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.observers = []
+
+    def add_observer(self, observer):
+        self.observers.append(observer)
+
+    def remove_observer(self, observer):
+        self.observers.remove(observer)
+
+    def notify_observers(self):
+        for observer in self.observers:
+            observer.update(self)
+
+    # Method that changes the state of the rental and triggers notifications
+    def change_state(self, new_state):
+        # Change the state of the rental
+
+        if new_state == 'pending':
+            self.pending_date = timezone.now()
+        elif new_state == 'confirmed':
+            self.confirm_date = timezone.now()
+        elif new_state == 'completed':
+            self.complete_date = timezone.now()
+        elif new_state == 'cancelled':
+            self.cancelled_date = timezone.now()
+
+        self.status = new_state
+        self.save()
+
+        # Notify all observers
+        self.notify_observers()
 
 class Review(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -137,7 +273,7 @@ class Review(models.Model):
 
 
 class Message(models.Model):
-    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE, null=True, blank=True)
     recipient = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
     item = models.ForeignKey(Item, related_name='messages', on_delete=models.CASCADE)
     enquiring_user = models.ForeignKey(User, related_name='enquiring_messages', on_delete=models.CASCADE)
