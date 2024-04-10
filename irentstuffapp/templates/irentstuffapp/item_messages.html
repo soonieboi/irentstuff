@@ -26,7 +26,7 @@
   <ul class="list-group p-0 m-0">
     {% for message in item_messages %}
 
-    {% if not message.sender %}
+    {% if message.sender.id == 1 %}
     <li class="list-group-item m-1 bg-info text-light align-items-start rounded v-70">
       <div class="text-dark"><strong></strong>Admin</strong></div>
       <div>{{ message.content }}</div>
