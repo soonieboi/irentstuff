@@ -85,4 +85,4 @@ Forms are often also instantiated when testing views. This is done to validate t
 - `form.errors`
 
 ## Coverage report
-The coverage report is available for download as a set of html pages contained in a zip folder. These reports provide insight into lines of code covered and not covered by tests, which give us insight as to where to focus testing efforts on if necessary.
+The coverage report is available for download as a set of html pages contained in a zip folder. This can be accessed from the **Artifacts** section of the GitHub Actions run, or from the **Archive coverage HTML report** step within the run. These reports provide insight into lines of code covered and not covered by tests, which give us insight as to where to focus testing efforts on if necessary.
