@@ -49,8 +49,8 @@
     <ul>
         <li><strong>Owner:</strong> {{ rental.owner }}</li>
         <li><strong>Rental Period:</strong> {{rental.start_date}} to {{rental.end_date}}</li>
-        <li><strong>Rental (per day):</strong> ${{ item.price_per_day }}</li>
-        <li><strong>Buy price:</strong> ${{ item.deposit }}</li>
+        <li><strong>Rental (per day):</strong> ${{ rental.item.price_per_day }}</li>
+        <li><strong>Buy price:</strong> ${{ rental.item.deposit }}</li>
     </ul>
 
     <p>More details are available at: <a href="https://irentstuff.app{% url 'item_detail' item_id=rental.item_id %}">https://irentstuff.app{% url 'item_detail' item_id=rental.item_id %}</a></p>

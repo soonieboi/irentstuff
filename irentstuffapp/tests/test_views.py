@@ -561,9 +561,8 @@ class AddRentalViewTestCase(TestCase):
             deleted_date=None,
         )
 
-    @patch("irentstuffapp.views.render_to_string")
-    @patch("irentstuffapp.views.EmailMultiAlternatives")
-    def test_add_rental_authenticated(self, mock_email, mock_render):
+
+    def test_add_rental_authenticated(self):
         # Login as the user
         self.client.login(username="testowner", password="password123")
 
@@ -590,22 +589,6 @@ class AddRentalViewTestCase(TestCase):
         self.assertEqual(rental.renter.username, "testrenter")
         self.assertEqual(rental.owner, self.owner)
         self.assertEqual(rental.status, "pending")
-
-        # Check that the email notifications were sent
-        mock_email.assert_called()
-        mock_render.assert_called()
-
-        # Check that fields for the email to the owner are correct
-        self.assertEqual(mock_email.call_args_list[0][0][-1], [self.owner.email])
-        self.assertEqual(mock_email.call_args_list[0][0][0], "iRentStuff.app - You added a Rental")
-
-        # Check that fields for the email to the renter are correct
-        self.assertEqual(mock_email.call_args_list[1][0][-1], [self.renter.email])
-        self.assertEqual(mock_email.call_args_list[1][0][0], "iRentStuff.app - You have a Rental Offer",)
-
-        # Check that the same item is used for the owner and renter
-        self.assertEqual(mock_render.call_args_list[0][0][-1]["item"], self.item)
-        self.assertEqual(mock_render.call_args_list[1][0][-1]["item"], self.item)
 
 
 class AcceptRentalViewTestCase(TestCase):

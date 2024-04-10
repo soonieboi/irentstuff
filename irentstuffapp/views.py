@@ -13,7 +13,7 @@ from django.utils.html import strip_tags
 from django.utils import timezone 
 from django.db.models import Count
 from django.conf import settings
-from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker
+from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
 from .decorators import apply_standard_discount, apply_loyalty_discount
 from datetime import datetime
@@ -406,37 +406,16 @@ def add_rental(request, item_id, username=""):
             rental.owner = request.user  # Set the owner to the logged-in user
             rental.pending_date = timezone.now()
             rental.status = 'pending' 
+
+            email_sender = EmailSender()
+            message_sender = MessageSender()
+
+            # Register observers with the rental object
+            rental.add_observer(email_sender)
+            rental.add_observer(message_sender)
             
             rental.save()
-
-
-            subject = 'iRentStuff.app - You added a Rental'
-            html_message = render_to_string('emails/rental_added_email.html', {'rental': rental, 'item':item})
-            plain_message = strip_tags(html_message)
-            email_from = settings.DEFAULT_FROM_EMAIL
-
-            email = EmailMultiAlternatives(
-                subject,
-                plain_message,
-                email_from,
-                [request.user.email],
-            )
-            email.attach_alternative(html_message, "text/html")
-            email.send()
-
-            subject2 = 'iRentStuff.app - You have a Rental Offer'
-            html_message2 = render_to_string('emails/rental_added_email2.html', {'rental': rental, 'item':item})
-
-            plain_message2 = strip_tags(html_message2)
-
-            email2 = EmailMultiAlternatives(
-                subject2,
-                plain_message2,
-                email_from,
-                [rentaluser.email],
-            )
-            email2.attach_alternative(html_message2, "text/html")
-            email2.send()
+            rental.notify_observers()
 
             return redirect('item_detail', item_id=item.id)
 
@@ -456,37 +435,14 @@ def accept_rental(request, item_id):
     # Check if the logged-in user is renter
     accept_rental_obj = Rental.objects.filter(item=item, renter = request.user, status='pending', start_date__gt=timezone.now()).first()
     if accept_rental_obj:
-        accept_rental_obj.status = 'confirmed'
-        accept_rental_obj.confirm_date = timezone.now()
-        accept_rental_obj.save()
+        email_sender = EmailSender()
+        message_sender = MessageSender()
 
-        subject = 'iRentStuff.app - you have a Rental Acceptance'
-        html_message = render_to_string('emails/rental_confirmed_email.html', {'rental': accept_rental_obj, 'item':item})
-        plain_message = strip_tags(html_message)
-        email_from = settings.DEFAULT_FROM_EMAIL
+        # Register observers with the rental object
+        accept_rental_obj.add_observer(email_sender)
+        accept_rental_obj.add_observer(message_sender)
 
-        email = EmailMultiAlternatives(
-            subject,
-            plain_message,
-            email_from,
-            [item.owner.email],
-        )
-        email.attach_alternative(html_message, "text/html")
-        email.send()
-
-        subject2 = 'iRentStuff.app - You accepted a Rental Offer'
-        html_message2 = render_to_string('emails/rental_confirmed_email2.html', {'rental': accept_rental_obj, 'item':item})
-
-        plain_message2 = strip_tags(html_message2)
-
-        email2 = EmailMultiAlternatives(
-            subject2,
-            plain_message2,
-            email_from,
-            [request.user.email],
-        )
-        email2.attach_alternative(html_message2, "text/html")
-        email2.send()
+        accept_rental_obj.change_state('confirmed')
 
     return redirect('item_detail', item_id=item.id)
 
@@ -497,23 +453,14 @@ def complete_rental(request, item_id):
     # Check if the logged-in user is owner and status is confirmed
     complete_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='confirmed').first()
     if complete_rental_obj:
-        complete_rental_obj.status = 'completed'
-        complete_rental_obj.complete_date = timezone.now()
-        complete_rental_obj.save()
+        email_sender = EmailSender()
+        message_sender = MessageSender()
 
-        subject = 'iRentStuff.app - you have set a rental to Complete'
-        html_message = render_to_string('emails/rental_completed_email.html', {'rental': complete_rental_obj,})
-        plain_message = strip_tags(html_message)
-        email_from = settings.DEFAULT_FROM_EMAIL
+        # Register observers with the rental object
+        complete_rental_obj.add_observer(email_sender)
+        complete_rental_obj.add_observer(message_sender)
 
-        email = EmailMultiAlternatives(
-            subject,
-            plain_message,
-            email_from,
-            [item.owner.email],
-        )
-        email.attach_alternative(html_message, "text/html")
-        email.send()
+        complete_rental_obj.change_state('completed')
 
     return redirect('item_detail', item_id=item.id)
 
@@ -524,23 +471,14 @@ def cancel_rental(request, item_id):
     # Check if the logged-in user is owner and status is confirmed
     cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='pending').first()
     if cancel_rental_obj:
-        cancel_rental_obj.status = 'cancelled'
-        cancel_rental_obj.cancelled_date = timezone.now()
-        cancel_rental_obj.save()
+        email_sender = EmailSender()
+        message_sender = MessageSender()
 
-        subject = 'iRentStuff.app - you have cancelled a rental'
-        html_message = render_to_string('emails/rental_cancelled_email.html', {'rental': cancel_rental_obj,})
-        plain_message = strip_tags(html_message)
-        email_from = settings.DEFAULT_FROM_EMAIL
+        # Register observers with the rental object
+        cancel_rental_obj.add_observer(email_sender)
+        cancel_rental_obj.add_observer(message_sender)
 
-        email = EmailMultiAlternatives(
-            subject,
-            plain_message,
-            email_from,
-            [item.owner.email],
-        )
-        email.attach_alternative(html_message, "text/html")
-        email.send()
+        cancel_rental_obj.change_state('cancelled')
 
     return redirect('item_detail', item_id=item.id)
 
