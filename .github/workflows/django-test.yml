@@ -24,10 +24,10 @@ jobs:
         coverage report
         coverage html
   
-      - name: Archive coverage HTML report
-        uses: actions/upload-artifact@v4
-        id: artifact-upload-step
-        with:
-          name: coverage-report
-          path: ./
+    - name: Archive coverage HTML report
+      uses: actions/upload-artifact@v4
+      id: artifact-upload-step
+      with:
+        name: coverage-report
+        path: ./
   
