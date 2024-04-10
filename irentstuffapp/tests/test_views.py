@@ -332,6 +332,7 @@ class AddItemViewTestCase(TestCase):
             "condition": "excellent",
             "price_per_day": 10.00,
             "deposit": 50.00,
+            "discount_percentage": 10,
         }
 
         # Make a POST request to add_item view with form data
@@ -381,6 +382,7 @@ class EditItemViewTestCase(TestCase):
             condition="excellent",
             price_per_day=10.00,
             deposit=50.00,
+            discount_percentage=0,
             image=self.image1,
             created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
             deleted_date=None,
@@ -399,7 +401,9 @@ class EditItemViewTestCase(TestCase):
             "condition": "good",
             "price_per_day": 20.00,
             "deposit": 100.00,
+            "discount_percentage": 5,
             "image": self.image2,
+            
         }
 
         # Make a POST request to edit_item view with form data
@@ -408,6 +412,7 @@ class EditItemViewTestCase(TestCase):
             form_data,
             follow=True,
         )
+
 
         form = ItemEditForm(data=form_data, files={"image": self.image2})
 
@@ -425,6 +430,7 @@ class EditItemViewTestCase(TestCase):
         self.assertEqual(self.item.price_per_day, 20.00)
         self.assertEqual(self.item.deposit, 100.00)
         self.assertIn(self.image2.name.split(".")[0], self.item.image.name)
+
 
     def tearDown(self):
         # Get the paths to the image files

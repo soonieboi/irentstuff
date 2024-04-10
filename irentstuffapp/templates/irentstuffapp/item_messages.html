@@ -51,13 +51,11 @@
 
 <form method="post" class="col-11 col-sm-10 mx-auto p-3 b-0 ">
   {% csrf_token %}
-
-
   <div class="input-group mb-3">
     {{ message_form }}
     <button class="btn btn-outline-secondary" type="submit"><i class="fa-solid fa-circle-arrow-right"></i></button>
   </div>
-
+  
 </form>
 <script>
   // Function to refresh the page

@@ -75,6 +75,7 @@ class ItemEditFormTestCase(TestCase):
             "condition": "good",  # Valid updated condition
             "price_per_day": 15.00,  # Valid updated price_per_day
             "deposit": 100.00,  # Valid updated deposit
+            "discount_percentage": 10,
         }
         form = ItemEditForm(data=form_data, instance=self.item)
         self.assertTrue(
@@ -111,6 +112,7 @@ class ItemFormTestCase(TestCase):
             "condition": "excellent",
             "price_per_day": 10.00,
             "deposit": 50.00,
+            "discount_percentage": 5,
         }
 
         # Create form instance with form data

@@ -3,21 +3,50 @@
 {% block content %}
 
 
+
 <center>
   <h1 class="p-4">Create Rental for {{item.title}}</h1>
 </center>
 <script>
 
+
   $(function() {
       // Use date picker for start and end dates
-      $("#id_start_date").datepicker();
-      $("#id_end_date").datepicker();
+      $("#id_start_date").datepicker({dateformat:"dd-mm-yy"});
+      $("#id_end_date").datepicker({dateformat:"dd-mm-yy"});
   });
 </script>
-
+<div class="container mt-5">
     <form class="shadow-sm bg-light col-11 col-sm-8 mx-auto card p-3 b-0" method="post">
         {% csrf_token %}
-        {{ form }}
+        <!-- {{ form }} -->
+          <div class="form-group">
+            <label for="id_start_date">Start Date:</label>
+            {{ form.start_date }}
+        </div>
+        <div class="form-group">
+            <label for="id_end_date">End Date:</label>
+            {{ form.end_date }}
+        </div>
+        <div class="form-group">
+          <label for="id_renterid">Renter (ID):</label>
+          {{ form.renterid }}
+      </div>
+      <p></p>
+      <div class="form-group form-check">
+          {{ form.apply_loyalty_discount }}
+          <label for="id_apply_loyalty_discount" class="form-check-label">
+              {{ form.apply_loyalty_discount.label }}
+          </label>
+      </div>
+      <p></p>
+      <div class="card bg-light p-3 mb-3">
+        <div id="priceCalculations">
+          <p id="basePrice">Base Price: </p>
+          <p id="discountedPrice">Discounted Price: </p>
+          <p id="finalPrice">Final Price (with Loyalty Discount): </p>
+        </div>
+      </div>
         <button class="btn btn-primary col-md-3 my-4" type="submit">Create</button>
         
     </form>
@@ -47,9 +76,29 @@
                   }
               }
           });
+          function calculatePrices() {
+            const basePricePerDay = {{ item.price_per_day }};
+            const discountPercentage = {{ item.discount_percentage }};
+            const loyaltyDiscountChecked = document.getElementById('id_apply_loyalty_discount').checked;
+            
+            let basePrice = basePricePerDay; 
+            let discountedPrice = basePrice * (1 - discountPercentage / 100);
+            let finalPrice = discountedPrice;
+
+            if (loyaltyDiscountChecked) {
+              const loyaltyDiscountRate = 0.95; // Assuming 5%
+              finalPrice *= loyaltyDiscountRate;
+            }
+
+            document.getElementById('basePrice').textContent = 'Base Price: ' + basePrice.toFixed(2);
+            document.getElementById('discountedPrice').textContent = 'Discounted Price: ' + discountedPrice.toFixed(2);
+            document.getElementById('finalPrice').textContent = 'Final Price (w/ discounts applied): ' + finalPrice.toFixed(2);
+          }
+          document.getElementById('id_apply_loyalty_discount').addEventListener('change', calculatePrices);
+          calculatePrices();
       });
     </script>
-
+</div>
 
 
 {% endblock %}
