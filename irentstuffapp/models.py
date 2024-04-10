@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.validators import MinValueValidator
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -106,7 +107,6 @@ class MessageSender(Observer):
             message.timestamp = timezone.now()
             message.save()
 
-
 #extend Decimal to prevent negative values
 class PositiveDecimalField(models.DecimalField):
     def __init__(self, *args, **kwargs):
@@ -124,10 +124,23 @@ class Item(models.Model):
     image = models.ImageField(upload_to='item_images/')
     created_date = models.DateTimeField(blank=True)
     deleted_date = models.DateTimeField(blank=True, null=True)
+    discount_percentage = models.PositiveIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text='Enter a number between 0 and 100 for the discount percentage'
+    )
 
-    
     def __str__(self):
         return self.title
+    
+    def apply_discount(func):
+        def wrapper(request, *args, **kwargs):
+            item = func(request, *args, **kwargs)
+            if item.discount_percentage > 0:
+                discounted_price = item.price * (1 - item.discount_percentage / 100)
+                item.discounted_price = discounted_price
+            return item
+        return wrapper
     
     def create_memento(self):
         """
@@ -223,7 +236,8 @@ class Rental(models.Model):
     complete_date = models.DateTimeField(blank=True, null=True)
     cancelled_date = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=255, choices=[('pending', 'Pending'), ('confirmed', 'Confirmed'), ('completed', 'Completed'), ('cancelled', 'Cancelled')], default='pending')
-    # You can add additional fields like rating, payment details, etc.
+    apply_loyalty_discount = models.BooleanField(default=False, help_text='Apply loyalty discount for this rental')
+
 
     def __str__(self):
         return f'{self.item} ({self.owner}, {self.renter}): {self.start_date} - {self.end_date}'

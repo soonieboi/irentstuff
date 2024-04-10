@@ -19,12 +19,12 @@ class PasswordChangeForm(forms.Form):
 class ItemEditForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit']
+        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit', 'discount_percentage']
 
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit']
+        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit', 'discount_percentage']
 
 class ItemReviewForm(forms.ModelForm):
 
@@ -53,15 +53,18 @@ class RentalForm(forms.ModelForm):
         required=True,
     )
 
+    apply_loyalty_discount = forms.BooleanField(required=False, label="Apply 5% loyalty discount")
+
     class Meta:
         model = Rental
-        fields = ['start_date', 'end_date']
+        fields = ['start_date', 'end_date', 'apply_loyalty_discount']
         widgets = {
             'start_date': forms.DateInput(attrs={'class': 'form-control datepicker'}),
             'end_date': forms.DateInput(attrs={'class': 'form-control datepicker'}),
             'item': forms.HiddenInput(),
             'owner': forms.HiddenInput(),
-            'status': forms.HiddenInput()
+            'status': forms.HiddenInput(),
+            'apply_loyalty_discount': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def clean(self):

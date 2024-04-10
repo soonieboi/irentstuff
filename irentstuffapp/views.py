@@ -15,11 +15,13 @@ from django.db.models import Count
 from django.conf import settings
 from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
-
+from .decorators import apply_standard_discount, apply_loyalty_discount
+from datetime import datetime
 
 def index(request):
     return HttpResponse("Index")
 
+@apply_standard_discount
 def items_list(request):
 
     search_query = request.GET.get('search', '')
@@ -38,6 +40,13 @@ def items_list(request):
 
     categories = Category.objects.all()
 
+    for item in items:
+        if item.discount_percentage > 0:
+            discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
+            item.discounted_price = discounted_price
+        else:
+            item.discounted_price = item.price_per_day
+
     context = {
         'items': items,
         'categories': categories,
@@ -50,6 +59,7 @@ def items_list(request):
     return render(request, 'irentstuffapp/items.html', context)
 
 @login_required
+@apply_loyalty_discount
 def add_item(request):
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES)
@@ -82,6 +92,7 @@ def add_review(request, item_id):
 
     return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item':item})
 
+@apply_loyalty_discount
 def item_detail(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
     reviews = Review.objects.filter(rental__item=item)
@@ -146,7 +157,12 @@ def item_detail(request, item_id):
             if review_obj:
                 make_review = True
                 
-    return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews, 'undos':undos})
+    if item.discount_percentage > 0:
+        discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
+        item.discounted_price = discounted_price  
+
+    context = {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews}           
+    return render(request, 'irentstuffapp/item_detail.html', context)
 
 
 @login_required
@@ -352,6 +368,7 @@ def inbox(request):
     return render(request, 'irentstuffapp/inbox.html', {'grouped_messages': grouped_messages})
 
 @login_required
+@apply_loyalty_discount
 def add_rental(request, item_id, username=""):
     item = get_object_or_404(Item, pk=item_id)
 
@@ -521,4 +538,4 @@ def login_user(request):
 def logout_user(request):
     logout(request)
     return redirect('/')
-    
+
