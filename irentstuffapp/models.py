@@ -69,7 +69,7 @@ class MessageSender(Observer):
             message = Message()
             message.item = rental.item
             message.enquiring_user = rental.renter
-            message.sender = None
+            message.sender = User.objects.get(id=1)
             message.recipient = rental.renter
             message.subject = 'Admin'
             message.content = 'Rental has been offered. Period of rental is from ' + str(rental.start_date) + ' to ' + str(rental.end_date)
@@ -79,7 +79,7 @@ class MessageSender(Observer):
             message = Message()
             message.item = rental.item
             message.enquiring_user = rental.renter
-            message.sender = None
+            message.sender = User.objects.get(id=1)
             message.recipient = rental.owner
             message.subject = 'Admin'
             message.content = 'Rental has been accepted. Period of rental is from ' + str(rental.start_date) + ' to ' + str(rental.end_date)
@@ -89,7 +89,7 @@ class MessageSender(Observer):
             message = Message()
             message.item = rental.item
             message.enquiring_user = rental.renter
-            message.sender = None
+            message.sender = User.objects.get(id=1)
             message.recipient = rental.renter
             message.subject = 'Admin'
             message.content = 'Rental has been completed. Period of rental is from ' + str(rental.start_date) + ' to ' + str(rental.end_date)
@@ -99,7 +99,7 @@ class MessageSender(Observer):
             message = Message()
             message.item = rental.item
             message.enquiring_user = rental.renter
-            message.sender = None
+            message.sender = User.objects.get(id=1)
             message.recipient = rental.renter
             message.subject = 'Admin'
             message.content = 'Rental has been cancelled.'
@@ -273,7 +273,7 @@ class Review(models.Model):
 
 
 class Message(models.Model):
-    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE, null=True, blank=True)
+    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
     recipient = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
     item = models.ForeignKey(Item, related_name='messages', on_delete=models.CASCADE)
     enquiring_user = models.ForeignKey(User, related_name='enquiring_messages', on_delete=models.CASCADE)
