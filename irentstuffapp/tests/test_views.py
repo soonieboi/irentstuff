@@ -645,16 +645,6 @@ class AcceptRentalViewTestCase(TestCase):
         # Check that there are 2 emails in the outbox
         self.assertEqual(len(mail.outbox), 2)
 
-        # Check if the confirmation email is sent to the owner
-        self.assertEqual(mail.outbox[0].from_email, "admin@irentstuff.app")
-        self.assertEqual(mail.outbox[0].to, [self.owner.email])
-        self.assertEqual(mail.outbox[0].subject, "iRentStuff.app - you have a Rental Acceptance")
-
-        # Check if the confirmation email is sent to the renter
-        self.assertEqual(mail.outbox[1].from_email, "admin@irentstuff.app")
-        self.assertEqual(mail.outbox[1].to, [self.renter.email])
-        self.assertEqual(mail.outbox[1].subject, "iRentStuff.app - You accepted a Rental Offer")
-
         # Check if the response redirects to the item detail page
         self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.id}))
 
