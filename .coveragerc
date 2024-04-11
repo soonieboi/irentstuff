@@ -1,0 +1,7 @@
+[run]
+source = 
+    irentstuffapp/
+
+omit = 
+    */migrations/*
+    */tests/*
