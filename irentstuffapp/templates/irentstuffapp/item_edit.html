@@ -15,15 +15,14 @@
         {% if field.name == 'description' %}
         <div> 
             <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}"
-            name="{{ field.html_name }}" rows="6"
-            style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
+            name="{{ field.html_name }}" rows="6">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
         </div>
         {% elif field.field.widget.input_type == 'select' and field.name != 'image'  %}
         <div>
             <select class="form-control select-arrow {% if field.errors %}is-invalid{% endif %}"
             id="{{ field.id_for_label }}" name="{{ field.html_name }}">
             {% for choice in field.field.choices %}
-            <option value="{{ choice.0 }}" {% if choice.0 == field.value %}selected{% endif %}>{{ choice.1 }}</option>
+            <option value="{{ choice.0 }}" {% if choice.0|lower == field.value|lower %}selected{% endif %}>{{ choice.1 }}</option>
             {% endfor %}
         </select>
         </div>
@@ -35,11 +34,16 @@
             <p> Change: <input type="file" class="form-control-file {% if field.errors %}is-invalid{% endif %}"
                 name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/*"> </p>
         </div>
+        {% elif field.name == 'discount_percentage' %}
+        <div>
+            <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1"
+                name="{{ field.html_name }}">{% if field.value %}{{ field.value }}{% else %}{{ 0 }}{% endif %}</textarea>
+            </div>
+
         {% else %}
-        <div> 
+        <div>
         <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1"
-            name="{{ field.html_name }}"
-            style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
+            name="{{ field.html_name }}">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
         </div>
         {% endif %}
         {% for error in field.errors %}
