@@ -19,3 +19,6 @@ jobs:
 
     - name: Run Bandit
       run: bandit -r .
+    
+    - name: Run Bandit excluding low severity issues
+      run: bandit -r . -ll
