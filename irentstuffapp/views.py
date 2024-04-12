@@ -16,6 +16,7 @@ from django.conf import settings
 from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
 from .decorators import apply_standard_discount, apply_loyalty_discount
+from .states import ItemState, ConcreteRentalCompleted, ConcreteRentalPending, ConcreteRentalOngoing, ConcreteUserIsItemOwner, ConcreteUserIsNotItemOwner
 from datetime import datetime
 
 def index(request):
@@ -164,6 +165,78 @@ def item_detail(request, item_id):
     context = {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews}           
     return render(request, 'irentstuffapp/item_detail.html', context)
 
+@apply_loyalty_discount
+def item_detail_with_state_pattern(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+    is_owner = request.user == item.owner
+    msgshow = True
+    undos = False
+
+    if is_owner:
+        user_state = ConcreteUserIsItemOwner()
+    else:
+        user_state = ConcreteUserIsNotItemOwner()
+
+    context = {'item': item, 'user': request.user, 'user_state': user_state}
+
+    item_state = ItemState(context)
+    reviews = item_state.view_item_reviews(context)
+    #check if there are any messages related to this item
+    item_messages = item_state.view_item_messages(context)
+    if not item_messages:
+        msgshow = False
+
+    renter = None
+    make_review = False
+
+    concrete_item_state = ConcreteRentalCompleted(context)
+
+    if request.user.is_authenticated:
+        active_rentals_obj = item_state.view_active_rental_details(context)
+        print(active_rentals_obj)
+        context['active_rentals'] = active_rentals_obj
+        
+        if active_rentals_obj:
+            renter = active_rentals_obj.renter
+
+            #can cancel?
+            #can accept?
+            # Check if there is a rental offer for this item - pending - before start_date
+            #accept_rental_obj = active_rentals_obj.filter(status='pending', start_date__gt=timezone.now()).first()
+            #if accept_rental_obj:
+            if active_rentals_obj.status=='pending':
+                concrete_item_state = ConcreteRentalPending(context)
+
+            #can complete?
+            elif active_rentals_obj.status=='confirmed':
+                concrete_item_state = ConcreteRentalOngoing(context)
+                        
+        else:
+            #check if user has undos for this item                
+            caretakercount = ItemStatesCaretaker.objects.filter(item=item).count()
+            if caretakercount > 1:
+                undos = True
+
+            #check if there are any completed rentals that user may want to review
+            review_obj =  item_state.view_item_reviews_by_user(context)
+            if review_obj:
+                make_review = True
+        
+    cancel_rental = concrete_item_state.can_cancel_rental(context)
+    accept_rental = concrete_item_state.can_accept_rental(context)
+    complete_rental = concrete_item_state.can_complete_rental(context)
+    edit_item = item_state.can_edit_item(context)
+
+    if not accept_rental: 
+        active_rentals_obj = None
+        context['active_rentals'] = active_rentals_obj
+            
+    if item.discount_percentage > 0:
+        discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
+        item.discounted_price = discounted_price  
+
+    context.update({'is_owner': is_owner, 'make_review': make_review, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews, 'edit_item': edit_item})         
+    return render(request, 'irentstuffapp/item_detail.html', context)
 
 @login_required
 def edit_item(request, item_id):

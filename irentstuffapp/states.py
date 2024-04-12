@@ -1,114 +1,72 @@
-from .views import add_rental, edit_item, delete_item, item_messages, add_review, cancel_rental, item_messages
-from .models import Rental, Message
+from .models import Rental, Message, Review
+from django.utils import timezone 
 
 
 class ItemState:
-    def view_rental_details(self, context):
-        return Rental.objects.filter(item=context.item)
+    def __init__(self, context):
+        self.context = context
+
+    def view_active_rental_details(self, context):
+        context['user_state'].view_active_rental_details
 
     def view_item_messages(self, context):
-        return Message.objects.filter(item=context.item)
+        if isinstance(context['user_state'].state, ConcreteUserIsItemOwner):
+            return Message.objects.filter(item=context['item'])
+        
+    def view_item_reviews(self, context):
+        return Review.objects.filter(rental__item=context['item'])
+
+    def view_item_reviews_by_user(self, context):
+        if isinstance(context['user_state'].state, ConcreteUserIsNotItemOwner):
+            return Rental.objects.filter(renter=context['user'], item=context['item'], status='completed')
+
+    def can_cancel_rental(self, context):
+        return False
+
+    def can_accept_rental(self, context):
+        return False
     
-    def add_rental_details(self, context):
-        raise NotImplementedError()
+    def can_complete_rental(self, context):
+        return False
 
-    def edit_item(self, context):
-        raise NotImplementedError()
-
-    def delete_item(self, context):
-        raise NotImplementedError()
-
-    def add_review(self, context):
-        raise NotImplementedError()
-
-    def edit_rental_state(self, context):
-        raise NotImplementedError()
-
-    def add_item_message(self, context):
-        raise NotImplementedError()    
+    def can_edit_item(self, context):
+        if isinstance(context['user_state'].state, ConcreteUserIsItemOwner) and not context['active_rentals']:
+            return True
 
 
-class ConcreteItemAvailable(ItemState):
-    def add_rental_details(self, context):
-        if isinstance(context.user.state, ConcreteUserIsItemOwner):
-            context.user.state.add_rental_details()
-        else:
-            raise ValueError("Cannot add rental details when user is not item owner")
+class ConcreteRentalCompleted(ItemState):
+    def can_accept_rental(self, context):
+        return isinstance(context['user_state'].state, ConcreteUserIsItemOwner)
+
+
+class ConcreteRentalPending(ItemState):
+    def can_cancel_rental(self, context):
+        return isinstance(context['user_state'].state, ConcreteUserIsItemOwner)
     
-    def edit_item(self, context):
-        if isinstance(context.user.state, ConcreteUserIsItemOwner):
-            context.user.state.edit_item()
-        else:
-            raise ValueError("Cannot edit item when user is not item owner")
-
-    def delete_item(self, context):
-        if isinstance(context.user.state, ConcreteUserIsItemOwner):
-            context.user.state.delete_item()
-        else:
-            raise ValueError("Cannot delete item when user is not item owner")
-
-    def add_item_message(self, context):
-        if isinstance(context.user.state, ConcreteUserIsNotItemOwner):
-            context.user.state.add_item_message()
-        else:
-            raise ValueError("Cannot delete item when user is not item owner")
+    def can_accept_rental(self, context):
+        if isinstance(context['user_state'].state, ConcreteUserIsNotItemOwner):
+            if context['active_rentals'].start_date>timezone.now().date():
+                return True
 
 
-class ConcreteItemCompleted(ItemState):
-    def add_item_message(self, context):
-        if isinstance(context.user.state, ConcreteUserIsNotItemOwner):
-            context.user.state.add_review()
-        else:
-            raise ValueError("Cannot add message when user is item owner")
-
-
-class ConcreteItemPending(ItemState):
-    def edit_rental_state(self, context):
-        if isinstance(context.user.state, ConcreteUserIsItemOwner):
-            cancel_rental(context.request, context.item_id)
-        else:
-            raise ValueError("Cannot cancel rental when user is not item owner")
-
-
-class ConcreteItemOngoing(ItemState):
-    def edit_rental_state(self, context):
-        if isinstance(context.user.state, ConcreteUserIsItemOwner):
-            cancel_rental(context.request, context.item_id)
-        else:
-            raise ValueError("Cannot cancel rental when user is not item owner")
+class ConcreteRentalOngoing(ItemState):
+    def can_complete_rental(self, context):
+        return isinstance(context['user_state'].state, ConcreteUserIsItemOwner)
 
 
 class UserState:
-    def add_rental_details(self, context):
-        pass
-
-    def edit_item(self, context):
-        pass
-
-    def delete_item(self, context):
-        pass
-
-    def add_review(self, context):
-        pass
-
-    def add_item_message(self, context):
-        pass
+    pass
 
 
 class ConcreteUserIsItemOwner(UserState):
-    def add_rental_details(self, context):
-        add_rental(context.request, context.item_id, username="")
+    state = 'item_owner'
 
-    def edit_item(self, context):
-        edit_item(context.request, context.item_id)
-
-    def delete_item(self, context):
-        delete_item(context.request, context.item_id)
+    def view_active_rental_details(self, context):
+        return Rental.objects.filter(item=context['item']).exclude(status="completed").exclude(status="cancelled").first()
 
 
 class ConcreteUserIsNotItemOwner(UserState):
-    def add_review(self, context):
-        add_review(context.request, context.item_id)
+    state = 'not_item_owner'
 
-    def add_item_message(self, context):
-        item_messages(context.request, context.item_id, userid=0)
+    def view_active_rental_details(self, context):
+        return Rental.objects.filter(item=context['item'], renter = context['user']).exclude(status="completed").exclude(status="cancelled").first()
