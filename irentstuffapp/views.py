@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404, HttpResponseForbidden, HttpResponseBadRequest
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -11,15 +11,18 @@ from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils import timezone 
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.conf import settings
-from .models import Item, Rental, Message, Review, Category, Interest
+from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender, Interest
+from .models import UserInterests, Top3CategoryDisplay, ItemsMinDiscountDisplay, NewlyListedItemsDisplay, InterestDisplayTemplate
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, InterestForm
-
+from .decorators import apply_standard_discount, apply_loyalty_discount
+from datetime import datetime
 
 def index(request):
     return HttpResponse("Index")
 
+@apply_standard_discount
 def items_list(request):
 
     search_query = request.GET.get('search', '')
@@ -38,6 +41,13 @@ def items_list(request):
 
     categories = Category.objects.all()
 
+    for item in items:
+        if item.discount_percentage > 0:
+            discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
+            item.discounted_price = discounted_price
+        else:
+            item.discounted_price = item.price_per_day
+
     context = {
         'items': items,
         'categories': categories,
@@ -50,6 +60,32 @@ def items_list(request):
     return render(request, 'irentstuffapp/items.html', context)
 
 @login_required
+def deals_view(request):
+
+    user_interests = UserInterests.objects.get(user=request.user)
+    template = ItemsMinDiscountDisplay()
+    items = template.get_items(user_interests.interest)
+    return render(request, 'irentstuffapp/items_with_template.html', {'items': items})
+
+@login_required
+def new_items_view(request):
+    
+    user_interests = UserInterests.objects.get(user=request.user)
+    template = NewlyListedItemsDisplay()
+    items = template.get_items(user_interests.interest)
+    return render(request, 'irentstuffapp/items_with_template.html', {'items': items})
+
+@login_required
+def fav_categories_view(request):
+    
+    user_interests = UserInterests.objects.get(user=request.user)
+    template = Top3CategoryDisplay()
+    items = template.get_items(user_interests.interest)
+    return render(request, 'irentstuffapp/items_with_template.html', {'items': items})
+
+
+@login_required
+@apply_loyalty_discount
 def add_item(request):
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES)
@@ -58,6 +94,7 @@ def add_item(request):
             item.owner = request.user  # Set the item's creator to the logged-in user
             item.created_date = timezone.now() 
             item.save()
+            save_state(request, item.id)
             return redirect('item_detail', item_id=item.id)  # Redirect to item detail page
     else:
         form = ItemForm()
@@ -81,11 +118,13 @@ def add_review(request, item_id):
 
     return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item':item})
 
+@apply_loyalty_discount
 def item_detail(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
     reviews = Review.objects.filter(rental__item=item)
     is_owner = request.user == item.owner
     msgshow = True
+    undos = False
 
     if is_owner:
         #check if there are any messages related to this item
@@ -115,6 +154,12 @@ def item_detail(request, item_id):
                 #can complete?
                 elif active_rentals_obj.status=='confirmed':
                     complete_rental = True
+            else:
+                #check if user has undos for this item
+                
+                caretakercount = ItemStatesCaretaker.objects.filter(item=item).count()
+                if caretakercount > 1:
+                    undos = True
 
         else:
             # Check if there is a rental for this item related to this user
@@ -138,7 +183,13 @@ def item_detail(request, item_id):
             if review_obj:
                 make_review = True
                 
-    return render(request, 'irentstuffapp/item_detail.html', {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews})
+    if item.discount_percentage > 0:
+        discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
+        item.discounted_price = discounted_price  
+
+    context = {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews}           
+    return render(request, 'irentstuffapp/item_detail.html', context)
+
 
 @login_required
 def edit_item(request, item_id):
@@ -153,6 +204,10 @@ def edit_item(request, item_id):
         form = ItemEditForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
+
+            # Call save_state to save the current state of the item
+            save_state(request, item_id)
+
             return redirect('item_detail', item_id=item.id)
     else:
         form = ItemEditForm(instance=item)
@@ -185,6 +240,58 @@ def delete_item(request, item_id):
     return redirect('items_list')  # Redirect to the items list page or another appropriate page
 
 
+
+@login_required
+def save_state(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+
+    # Check if the logged-in user is the owner of the item
+    if request.user != item.owner:
+        # Optionally, you can handle unauthorized access here
+        return HttpResponseForbidden()
+
+    caretaker = ItemStatesCaretaker.objects.filter(item=item).first()
+    if not caretaker:
+        caretaker = ItemStatesCaretaker(item=item)
+
+    caretaker.save_state()  # Save the current state of the item
+
+    #messages.success(request, 'State saved successfully!')
+    return redirect('item_detail', item_id=item_id)
+
+@login_required
+def restore_state(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+
+    # Check if the logged-in user is the owner of the item
+    if request.user != item.owner:
+        # Optionally, you can handle unauthorized access here
+        return HttpResponseForbidden()
+
+    # don't delete if only 1 state, that is the original state
+    caretakercount = ItemStatesCaretaker.objects.filter(item=item).count()
+
+    if caretakercount < 2:
+        messages.error(request, 'No previous changes found for this item.')
+        return redirect('item_detail', item_id=item_id)
+
+    caretakerdel = ItemStatesCaretaker.objects.filter(item=item).order_by('-datetime_saved').first()
+
+    if caretakerdel:
+        caretakerdel.delete()
+
+    caretaker = ItemStatesCaretaker.objects.filter(item=item).order_by('-datetime_saved').first()
+    if not caretaker or not caretaker.memento:
+        messages.error(request, 'No changes found for this item.')
+        return redirect('item_detail', item_id=item_id)
+
+    caretaker.restore_state()  # Restore the item to the previous state
+
+    messages.success(request, 'Undo was successful!')
+    return redirect('item_detail', item_id=item_id)
+
+
+    
 @login_required
 def item_messages(request, item_id, userid=0):
 
@@ -287,6 +394,7 @@ def inbox(request):
     return render(request, 'irentstuffapp/inbox.html', {'grouped_messages': grouped_messages})
 
 @login_required
+@apply_loyalty_discount
 def add_rental(request, item_id, username=""):
     item = get_object_or_404(Item, pk=item_id)
 
@@ -324,37 +432,16 @@ def add_rental(request, item_id, username=""):
             rental.owner = request.user  # Set the owner to the logged-in user
             rental.pending_date = timezone.now()
             rental.status = 'pending' 
+
+            email_sender = EmailSender()
+            message_sender = MessageSender()
+
+            # Register observers with the rental object
+            rental.add_observer(email_sender)
+            rental.add_observer(message_sender)
             
             rental.save()
-
-
-            subject = 'iRentStuff.app - You added a Rental'
-            html_message = render_to_string('emails/rental_added_email.html', {'rental': rental, 'item':item})
-            plain_message = strip_tags(html_message)
-            email_from = settings.DEFAULT_FROM_EMAIL
-
-            email = EmailMultiAlternatives(
-                subject,
-                plain_message,
-                email_from,
-                [request.user.email],
-            )
-            email.attach_alternative(html_message, "text/html")
-            email.send()
-
-            subject2 = 'iRentStuff.app - You have a Rental Offer'
-            html_message2 = render_to_string('emails/rental_added_email2.html', {'rental': rental, 'item':item})
-
-            plain_message2 = strip_tags(html_message2)
-
-            email2 = EmailMultiAlternatives(
-                subject2,
-                plain_message2,
-                email_from,
-                [rentaluser.email],
-            )
-            email2.attach_alternative(html_message2, "text/html")
-            email2.send()
+            rental.notify_observers()
 
             return redirect('item_detail', item_id=item.id)
 
@@ -374,37 +461,14 @@ def accept_rental(request, item_id):
     # Check if the logged-in user is renter
     accept_rental_obj = Rental.objects.filter(item=item, renter = request.user, status='pending', start_date__gt=timezone.now()).first()
     if accept_rental_obj:
-        accept_rental_obj.status = 'confirmed'
-        accept_rental_obj.confirm_date = timezone.now()
-        accept_rental_obj.save()
+        email_sender = EmailSender()
+        message_sender = MessageSender()
 
-        subject = 'iRentStuff.app - you have a Rental Acceptance'
-        html_message = render_to_string('emails/rental_confirmed_email.html', {'rental': accept_rental_obj, 'item':item})
-        plain_message = strip_tags(html_message)
-        email_from = settings.DEFAULT_FROM_EMAIL
+        # Register observers with the rental object
+        accept_rental_obj.add_observer(email_sender)
+        accept_rental_obj.add_observer(message_sender)
 
-        email = EmailMultiAlternatives(
-            subject,
-            plain_message,
-            email_from,
-            [item.owner.email],
-        )
-        email.attach_alternative(html_message, "text/html")
-        email.send()
-
-        subject2 = 'iRentStuff.app - You accepted a Rental Offer'
-        html_message2 = render_to_string('emails/rental_confirmed_email2.html', {'rental': accept_rental_obj, 'item':item})
-
-        plain_message2 = strip_tags(html_message2)
-
-        email2 = EmailMultiAlternatives(
-            subject2,
-            plain_message2,
-            email_from,
-            [request.user.email],
-        )
-        email2.attach_alternative(html_message2, "text/html")
-        email2.send()
+        accept_rental_obj.change_state('confirmed')
 
     return redirect('item_detail', item_id=item.id)
 
@@ -415,23 +479,14 @@ def complete_rental(request, item_id):
     # Check if the logged-in user is owner and status is confirmed
     complete_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='confirmed').first()
     if complete_rental_obj:
-        complete_rental_obj.status = 'completed'
-        complete_rental_obj.complete_date = timezone.now()
-        complete_rental_obj.save()
+        email_sender = EmailSender()
+        message_sender = MessageSender()
 
-        subject = 'iRentStuff.app - you have set a rental to Complete'
-        html_message = render_to_string('emails/rental_completed_email.html', {'rental': complete_rental_obj,})
-        plain_message = strip_tags(html_message)
-        email_from = settings.DEFAULT_FROM_EMAIL
+        # Register observers with the rental object
+        complete_rental_obj.add_observer(email_sender)
+        complete_rental_obj.add_observer(message_sender)
 
-        email = EmailMultiAlternatives(
-            subject,
-            plain_message,
-            email_from,
-            [item.owner.email],
-        )
-        email.attach_alternative(html_message, "text/html")
-        email.send()
+        complete_rental_obj.change_state('completed')
 
     return redirect('item_detail', item_id=item.id)
 
@@ -442,23 +497,14 @@ def cancel_rental(request, item_id):
     # Check if the logged-in user is owner and status is confirmed
     cancel_rental_obj = Rental.objects.filter(item=item, owner = request.user, status='pending').first()
     if cancel_rental_obj:
-        cancel_rental_obj.status = 'cancelled'
-        cancel_rental_obj.cancelled_date = timezone.now()
-        cancel_rental_obj.save()
+        email_sender = EmailSender()
+        message_sender = MessageSender()
 
-        subject = 'iRentStuff.app - you have cancelled a rental'
-        html_message = render_to_string('emails/rental_cancelled_email.html', {'rental': cancel_rental_obj,})
-        plain_message = strip_tags(html_message)
-        email_from = settings.DEFAULT_FROM_EMAIL
+        # Register observers with the rental object
+        cancel_rental_obj.add_observer(email_sender)
+        cancel_rental_obj.add_observer(message_sender)
 
-        email = EmailMultiAlternatives(
-            subject,
-            plain_message,
-            email_from,
-            [item.owner.email],
-        )
-        email.attach_alternative(html_message, "text/html")
-        email.send()
+        cancel_rental_obj.change_state('cancelled')
 
     return redirect('item_detail', item_id=item.id)
 
@@ -518,39 +564,9 @@ def login_user(request):
 def logout_user(request):
     logout(request)
     return redirect('/')
-    
-
- # 3 template classes: Top3Categories, ByEndDate, ByPricePerDay, ByDeposit  
- # forms to take 3 qns to cater to the 3 classes (cat to get dynamically from db)
- # to check if >3 boxes are selected, throw error if so, less than 3 just mark the rest as 'none'
- # verify the js check also
- # 
-class InterestDisplayTemplate:
-    def get(self, request):
-        items = Item.objects.all()
-        return render(request, 'items_list.html', {'items': items})
-
-    def get_items(self, user):
-        raise NotImplementedError("Subclasses must implement this method")
-
-class Top3CategoryDisplay(InterestDisplayTemplate):
-    def get_items(self, user):
-        return Item.objects.filter(category= "Games") #temp code, to get the 3 categories
-
-# class ByEndDateDisplay(InterestDisplayTemplate):
-#     def get_items(self, user):
-#         return Item.objects.filter( Q(start_date__gt = timezone.now()) & Q(end_date__lt = (timezone.now() + datetime.timedelta(days=10)) )) 
-#         #temp code, to get the end date
-
-# class ByPricePerDay(InterestDisplayTemplate):
-#     def get_items(self, user):
-#         return Item.objects.filter( Q(price_per_day__gt = 0) & Q(price_per_day__lt = 10) )
-#         #temp code, to get the end date
-
-
 
 @login_required
-def category_interest(request):  #views to fix as well, to get id instead of value
+def category_interest(request): 
     categories = Category.objects.all()
     
     context = {
@@ -559,12 +575,30 @@ def category_interest(request):  #views to fix as well, to get id instead of val
 
     if request.method == 'POST':
         selected_categories = request.POST.get('selected_categories')
+        min_discount = request.POST.get('min_discount')
+        item_cd_crit = request.POST.get('item_cd_crit')
+        existing_user_interests = UserInterests.objects.filter(user=request.user).first()
+
         if selected_categories:
             selected_categories_list = selected_categories.split(',')
-            user_interest = Interest.objects.create(user=request.user, created_date=timezone.now())
-            user_interest.categories.add(*selected_categories_list)
-            print(user_interest)
-            user_interest.save()
+
+            # Delete old entries
+            old_interests = Interest.objects.filter(created_date__lte=timezone.now())
+            if old_interests.exists():
+                old_interests.delete()
+
+            interest = Interest.objects.create(created_date=timezone.now(), min_discount= min_discount, item_cd_crit= item_cd_crit)
+            interest.categories.add(*selected_categories_list)
+            interest.save()
+            
+        if existing_user_interests:    
+            existing_user_interests.interest = interest
+
+            existing_user_interests.save()
             return redirect('items_list') 
+        else:
+            user_interests = UserInterests.objects.create(user=request.user, interest=interest)
+            user_interests.save()
+            return redirect('items_list')
 
     return render(request, 'irentstuffapp/interest.html', context)

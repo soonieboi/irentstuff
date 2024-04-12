@@ -10,6 +10,7 @@ urlpatterns = [
     path('stuff/<int:item_id>/', views.item_detail, name='item_detail'),
     path('add_stuff/', views.add_item, name='add_item'),
     path('stuff/<int:item_id>/edit/', views.edit_item, name='edit_item'),
+    path('stuff/<int:item_id>/undo/', views.restore_state, name='undo_item'),
     path('stuff/<int:item_id>/delete/', views.delete_item, name='delete_item'),
     path('stuff/<int:item_id>/accept_rental/', views.accept_rental, name='accept_rental'),
     path('stuff/<int:item_id>/complete_rental/', views.complete_rental, name='complete_rental'),
@@ -31,5 +32,8 @@ urlpatterns = [
     path('stuff/', views.items_list, name='items_list'),
     path('stuff/category/<int:category_id>/', views.items_list, name='items_list_by_category'), 
     
-    path('interest/category', views.category_interest, name='category_interest')
+    path('interest', views.category_interest, name='interest'),
+    path('deals/', views.deals_view, name='deals'),
+    path('newitems/', views.new_items_view, name='new_items'),
+    path('favcategories/', views.fav_categories_view, name='fav_categories'),
 ]

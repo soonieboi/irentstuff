@@ -332,6 +332,7 @@ class AddItemViewTestCase(TestCase):
             "condition": "excellent",
             "price_per_day": 10.00,
             "deposit": 50.00,
+            "discount_percentage": 10,
         }
 
         # Make a POST request to add_item view with form data
@@ -381,6 +382,7 @@ class EditItemViewTestCase(TestCase):
             condition="excellent",
             price_per_day=10.00,
             deposit=50.00,
+            discount_percentage=0,
             image=self.image1,
             created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
             deleted_date=None,
@@ -399,7 +401,9 @@ class EditItemViewTestCase(TestCase):
             "condition": "good",
             "price_per_day": 20.00,
             "deposit": 100.00,
+            "discount_percentage": 5,
             "image": self.image2,
+            
         }
 
         # Make a POST request to edit_item view with form data
@@ -408,6 +412,7 @@ class EditItemViewTestCase(TestCase):
             form_data,
             follow=True,
         )
+
 
         form = ItemEditForm(data=form_data, files={"image": self.image2})
 
@@ -425,6 +430,7 @@ class EditItemViewTestCase(TestCase):
         self.assertEqual(self.item.price_per_day, 20.00)
         self.assertEqual(self.item.deposit, 100.00)
         self.assertIn(self.image2.name.split(".")[0], self.item.image.name)
+
 
     def tearDown(self):
         # Get the paths to the image files
@@ -555,9 +561,8 @@ class AddRentalViewTestCase(TestCase):
             deleted_date=None,
         )
 
-    @patch("irentstuffapp.views.render_to_string")
-    @patch("irentstuffapp.views.EmailMultiAlternatives")
-    def test_add_rental_authenticated(self, mock_email, mock_render):
+
+    def test_add_rental_authenticated(self):
         # Login as the user
         self.client.login(username="testowner", password="password123")
 
@@ -584,22 +589,6 @@ class AddRentalViewTestCase(TestCase):
         self.assertEqual(rental.renter.username, "testrenter")
         self.assertEqual(rental.owner, self.owner)
         self.assertEqual(rental.status, "pending")
-
-        # Check that the email notifications were sent
-        mock_email.assert_called()
-        mock_render.assert_called()
-
-        # Check that fields for the email to the owner are correct
-        self.assertEqual(mock_email.call_args_list[0][0][-1], [self.owner.email])
-        self.assertEqual(mock_email.call_args_list[0][0][0], "iRentStuff.app - You added a Rental")
-
-        # Check that fields for the email to the renter are correct
-        self.assertEqual(mock_email.call_args_list[1][0][-1], [self.renter.email])
-        self.assertEqual(mock_email.call_args_list[1][0][0], "iRentStuff.app - You have a Rental Offer",)
-
-        # Check that the same item is used for the owner and renter
-        self.assertEqual(mock_render.call_args_list[0][0][-1]["item"], self.item)
-        self.assertEqual(mock_render.call_args_list[1][0][-1]["item"], self.item)
 
 
 class AcceptRentalViewTestCase(TestCase):

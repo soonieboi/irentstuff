@@ -7,32 +7,10 @@
 <button class="tablink" onclick="openPage('{% url 'new_items' %}')">New Items</button>
 
 <div class="row p-2 w-98 m-0">
-  
-  {% if mystuff %}
-  <h3 class="pt-3 pb-2">MY STUFF</h3>
-  {% endif %}
-
-  {% if searchstr %}
-  <h3 class="pt-3 pb-2">Searching for {{searchstr}}</h3>
-  {% endif %}
-
-  {% if no_items_message %}
-  <div class="itmdet col-12 mx-auto p-3 b-0 m-3">
-    <div class="shadow-sm card mb-3">
-      <div class="row g-0 gx-4">
-        <div class="col-12 col-md-4">
-        <p class="card-text m-4 mb-0" >No items found</p>
-        <a class="card-text btn btn-primary m-4" href="{% url 'items_list' %}">Check out other stuff</a>
-      </div>
-    </div>
-  </div>
-  {% else %}
-
-  {% for item in items %}
-  <!-- {{ package|pprint }} -->
-  
+{% for item in items %}
 
   <div class="itm col-xl-2 col-md-3 col-sm-6 p-2">
+    <div class="itm p-2">
     <a href="{% url 'item_detail' item_id=item.id %}">
       
         <div class="card card-common h-100 hover-shadow">
@@ -70,54 +48,51 @@
 
       </div>
     </a>
+    </div>
   </div>
 
   {% endfor %}
-  {% endif %}
+</div>
+<style>
 
-  </div>
+  body, html {
+    height: 100%;
+    margin: 0;
+  }
 
-  <style>
-
-    body, html {
-      height: 100%;
-      margin: 0;
-    }
-  
-    .tablink {
-      background-color: #3240ff;
-      color: white;
-      float: left;
-      border: none;
-      outline-style: solid;
-      outline-color: white;
-      outline-width: medium;
-      cursor: pointer;
-      padding: 10px 10px;
-      font-size: 14px;
-      width: 25%;
-    }
-      
-    /* Change background color of tab on hover */
-    .tablink:hover {
-      background-color: #ddd;
-      color: black;
-    }
+  .tablink {
+    background-color: #3240ff;
+    color: white;
+    float: left;
+    border: none;
+    outline-style: solid;
+    outline-color: white;
+    outline-width: medium;
+    cursor: pointer;
+    padding: 10px 10px;
+    font-size: 14px;
+    width: 25%;
+  }
     
-    /* Style the tab content (may not use) */
-    .tabcontent {
-      display: none;
-      padding: 6px 12px;
-      border: 1px solid #ccc;
-      border-top: none;
-      height: 100%;
-    }
-    </style>
-      <script>
-        function openPage(url) {
-            window.location.href = url;
-        }
+  /* Change background color of tab on hover */
+  .tablink:hover {
+    background-color: #ddd;
+    color: black;
+  }
   
-    </script>
+  /* Style the tab content (may not use) */
+  .tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+    height: 100%;
+  }
+  </style>
+    <script>
+      function openPage(url) {
+          window.location.href = url;
+      }
 
-  {% endblock %}
+  </script>
+{% endblock %}

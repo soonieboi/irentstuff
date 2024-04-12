@@ -65,11 +65,8 @@
             </form>
 
           </li>
-
-
-
-
         </ul>
+        
         <ul class="d-flex navbar-nav mb-2 mb-lg-0">
           {% if user.is_authenticated %}
 
@@ -82,6 +79,9 @@
               {% if user.is_authenticated %}
               <li class="nav-item">
                 <a class="nav-link" href="{% url 'items_list_my' %}"><i class="fa-solid fa-gauge-simple px-2"></i>Dashboard</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'interest' %}"><i class="fa-solid fa-gauge-simple px-2"></i>User Interests</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="/logout/"><i class="fa-solid fa-right-to-bracket px-2"></i>Logout</a>
