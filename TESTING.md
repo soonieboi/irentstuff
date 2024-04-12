@@ -83,3 +83,6 @@ Note that these methods contain other methods that can provide more details
 Forms are often also instantiated when testing views. This is done to validate that the form data passed into the view is valid. As such, assuming that a form is instantiated as `form = ItemForm(data=form_data, self.create_iamge())`, some helpful methods for debugging include:
 - `form.is_valid()`
 - `form.errors`
+
+## Coverage report
+The coverage report is available for download as a set of html pages contained in a zip folder. This can be accessed from the **Artifacts** section of the GitHub Actions run, or from the **Archive coverage HTML report** step within the run. These reports provide insight into lines of code covered and not covered by tests, which give us insight as to where to focus testing efforts on if necessary.

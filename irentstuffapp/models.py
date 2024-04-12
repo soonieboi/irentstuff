@@ -5,7 +5,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.validators import MinValueValidator
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from datetime import datetime, timedelta
+from django.utils import timezone
 from django.conf import settings
 from abc import ABC, abstractmethod
 from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives  
@@ -344,6 +344,3 @@ class NewlyListedItemsDisplay(InterestDisplayTemplate):
         day_filter = interest.item_cd_crit if interest.item_cd_crit else 3
         return Item.objects.filter(created_date__gt = timezone.now() - timedelta(days= day_filter))
         # to get the created date within past 3 days
-
-# prepare views for all 3, as some sort of toggle button to switch between the 3 templates
-# see hoow to integrate to main page, buttons needed too
