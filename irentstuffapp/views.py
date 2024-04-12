@@ -18,6 +18,9 @@ from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewFo
 from .decorators import apply_standard_discount, apply_loyalty_discount
 from .states import ItemState, ConcreteRentalCompleted, ConcreteRentalPending, ConcreteRentalOngoing, ConcreteUserIsItemOwner, ConcreteUserIsNotItemOwner
 from datetime import datetime
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 def index(request):
     return HttpResponse("Index")
@@ -172,31 +175,36 @@ def item_detail_with_state_pattern(request, item_id):
     msgshow = True
     undos = False
 
-    if is_owner:
-        user_state = ConcreteUserIsItemOwner()
-    else:
-        user_state = ConcreteUserIsNotItemOwner()
+    context = {'item': item, 'user': request.user}
 
-    context = {'item': item, 'user': request.user, 'user_state': user_state}
+    if is_owner:
+        user_state = ConcreteUserIsItemOwner(context)
+    else:
+        user_state = ConcreteUserIsNotItemOwner(context)
+
+    context.update({'user_state': user_state})
 
     item_state = ItemState(context)
     reviews = item_state.view_item_reviews(context)
     #check if there are any messages related to this item
     item_messages = item_state.view_item_messages(context)
+    logging.debug("item_messages: %s", Rental.objects.filter(item=context['item']).exclude(status="completed").exclude(status="cancelled").first())
+
     if not item_messages:
         msgshow = False
 
     renter = None
     make_review = False
 
-    concrete_item_state = ConcreteRentalCompleted(context)
-
     if request.user.is_authenticated:
         active_rentals_obj = item_state.view_active_rental_details(context)
-        print(active_rentals_obj)
-        context['active_rentals'] = active_rentals_obj
+        logging.debug("active_rentals_obj: %s", active_rentals_obj)
+
+        context['active_rental'] = active_rentals_obj
         
         if active_rentals_obj:
+            logging.debug("status: %s", active_rentals_obj.status)
+
             renter = active_rentals_obj.renter
 
             #can cancel?
@@ -217,6 +225,8 @@ def item_detail_with_state_pattern(request, item_id):
             if caretakercount > 1:
                 undos = True
 
+            concrete_item_state = ConcreteRentalCompleted(context)
+
             #check if there are any completed rentals that user may want to review
             review_obj =  item_state.view_item_reviews_by_user(context)
             if review_obj:
@@ -226,16 +236,16 @@ def item_detail_with_state_pattern(request, item_id):
     accept_rental = concrete_item_state.can_accept_rental(context)
     complete_rental = concrete_item_state.can_complete_rental(context)
     edit_item = item_state.can_edit_item(context)
+    add_rental = item_state.can_add_rental(context)
 
-    if not accept_rental: 
-        active_rentals_obj = None
-        context['active_rentals'] = active_rentals_obj
+    logging.debug("edit_item: %s", edit_item)
+
             
     if item.discount_percentage > 0:
         discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
         item.discounted_price = discounted_price  
 
-    context.update({'is_owner': is_owner, 'make_review': make_review, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews, 'edit_item': edit_item})         
+    context.update({'is_owner': is_owner, 'make_review': make_review, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews, 'edit_item': edit_item, 'add_rental':add_rental})         
     return render(request, 'irentstuffapp/item_detail.html', context)
 
 @login_required

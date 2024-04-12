@@ -47,13 +47,11 @@
           </p>
 
 
-          {% if is_owner %}
-          {% if not active_rental %}
+          {% if add_rental %}
           <p class="card-text">
             <a class="btn btn-primary px-4 my-1 d-inline " href="{% url 'add_rental' item_id=item.id %}">Create
               Rental</a>
           </p>
-          {% endif %}
           {% endif %}
 
           <p class="card-text">
@@ -91,7 +89,7 @@
           <p class="card-text">{{item.description|linebreaks}}</p>
           </p>
 
-          {% if can_edit_item %}
+          {% if edit_item %}
           <script>
             function confirmDelete() {
                 if (confirm("Are you sure you want to delete this item?")) {
