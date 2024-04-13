@@ -19,7 +19,7 @@ jobs:
         sudo Xvfb :99 -ac &
         export DISPLAY=:99
         /usr/share/zaproxy/zap.sh -daemon -port 8090 -host 127.0.0.1 -config api.key=4sgv6ekunoepofqiof59tqbohr &
-        sleep 10
+        sleep 30
     
     - name: Install ZAP CLI
       run: pip install zapcli
