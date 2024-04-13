@@ -12,7 +12,13 @@ class ItemState:
     def view_item_messages(self, context):
         if isinstance(context['user_state'], ConcreteUserIsItemOwner):
             return Message.objects.filter(item=context['item'])
-        
+    
+    def show_item_messages(self, context):
+        if isinstance(context['user_state'], ConcreteUserIsItemOwner) and not Message.objects.filter(item=context['item']):
+            return False 
+        else:
+            return True
+
     def view_item_reviews(self, context):
         return Review.objects.filter(rental__item=context['item'])
 

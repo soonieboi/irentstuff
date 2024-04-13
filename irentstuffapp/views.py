@@ -172,7 +172,7 @@ def item_detail(request, item_id):
 def item_detail_with_state_pattern(request, item_id):
     item = get_object_or_404(Item, pk=item_id)
     is_owner = request.user == item.owner
-    msgshow = True
+    # msgshow = True
     undos = False
 
     context = {'item': item, 'user': request.user}
@@ -184,20 +184,19 @@ def item_detail_with_state_pattern(request, item_id):
 
     context.update({'user_state': user_state})
 
-    item_state = ItemState(context)
-    reviews = item_state.view_item_reviews(context)
+    concrete_item_state = ItemState(context)
+    reviews = concrete_item_state.view_item_reviews(context)
     #check if there are any messages related to this item
-    item_messages = item_state.view_item_messages(context)
+    # item_messages = concrete_item_state.view_item_messages(context)
     logging.debug("item_messages: %s", Rental.objects.filter(item=context['item']).exclude(status="completed").exclude(status="cancelled").first())
 
-    if not item_messages:
-        msgshow = False
+    msgshow = concrete_item_state.show_item_messages(context)
 
     renter = None
     make_review = False
 
     if request.user.is_authenticated:
-        active_rentals_obj = item_state.view_active_rental_details(context)
+        active_rentals_obj = concrete_item_state.view_active_rental_details(context)
         logging.debug("active_rentals_obj: %s", active_rentals_obj)
 
         context['active_rental'] = active_rentals_obj
@@ -218,25 +217,23 @@ def item_detail_with_state_pattern(request, item_id):
             #can complete?
             elif active_rentals_obj.status=='confirmed':
                 concrete_item_state = ConcreteRentalOngoing(context)
-                        
+          
         else:
             #check if user has undos for this item                
             caretakercount = ItemStatesCaretaker.objects.filter(item=item).count()
             if caretakercount > 1:
                 undos = True
 
-            concrete_item_state = ConcreteRentalCompleted(context)
-
             #check if there are any completed rentals that user may want to review
-            review_obj =  item_state.view_item_reviews_by_user(context)
+            review_obj =  concrete_item_state.view_item_reviews_by_user(context)
             if review_obj:
                 make_review = True
-        
+     
     cancel_rental = concrete_item_state.can_cancel_rental(context)
     accept_rental = concrete_item_state.can_accept_rental(context)
     complete_rental = concrete_item_state.can_complete_rental(context)
-    edit_item = item_state.can_edit_item(context)
-    add_rental = item_state.can_add_rental(context)
+    edit_item = concrete_item_state.can_edit_item(context)
+    add_rental = concrete_item_state.can_add_rental(context)
 
     logging.debug("edit_item: %s", edit_item)
 
