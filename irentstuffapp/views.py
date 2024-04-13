@@ -242,7 +242,7 @@ def item_detail_with_state_pattern(request, item_id):
         discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
         item.discounted_price = discounted_price  
 
-    context.update({'is_owner': is_owner, 'make_review': make_review, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews, 'edit_item': edit_item, 'add_rental':add_rental})         
+    context.update({'is_owner': is_owner, 'make_review': make_review, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews, 'edit_item': edit_item, 'add_rental':add_rental, 'undos':undos})         
     return render(request, 'irentstuffapp/item_detail.html', context)
 
 @login_required
