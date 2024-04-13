@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - sherm-20230412-sast&dast
+      - sherm-20230412-sast_dast
 jobs:
   dast:
     runs-on: ubuntu-latest
