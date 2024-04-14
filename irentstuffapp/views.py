@@ -14,10 +14,10 @@ from django.utils import timezone
 from django.db.models import Count
 from django.conf import settings
 from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender, Interest
-from .models import UserInterests, Top3CategoryDisplay, ItemsMinDiscountDisplay, NewlyListedItemsDisplay, InterestDisplayTemplate
+from .models import UserInterests, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay, InterestDisplayTemplate
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, InterestForm
 from .decorators import apply_standard_discount, apply_loyalty_discount
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def index(request):
     return HttpResponse("Index")
@@ -61,28 +61,33 @@ def items_list(request):
 
 @login_required
 def deals_view(request):
-
-    user_interests = UserInterests.objects.get(user=request.user)
-    template = ItemsMinDiscountDisplay()
-    items = template.get_items(user_interests.interest)
-    return render(request, 'irentstuffapp/items_with_template.html', {'items': items})
+    try:
+        user_interests = UserInterests.objects.get(user = request.user)
+        template = ItemsDiscountDisplay()
+        items = template.get_items(user_interests.interest)
+        return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
+    except UserInterests.DoesNotExist:
+        return redirect('interest')
 
 @login_required
 def new_items_view(request):
-    
-    user_interests = UserInterests.objects.get(user=request.user)
-    template = NewlyListedItemsDisplay()
-    items = template.get_items(user_interests.interest)
-    return render(request, 'irentstuffapp/items_with_template.html', {'items': items})
+    try:
+        user_interests = UserInterests.objects.get(user=request.user)
+        template = NewlyListedItemsDisplay()
+        items = template.get_items(user_interests.interest)
+        return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
+    except UserInterests.DoesNotExist:
+        return redirect('interest')
 
 @login_required
 def fav_categories_view(request):
-    
-    user_interests = UserInterests.objects.get(user=request.user)
-    template = Top3CategoryDisplay()
-    items = template.get_items(user_interests.interest)
-    return render(request, 'irentstuffapp/items_with_template.html', {'items': items})
-
+    try:
+        user_interests = UserInterests.objects.get(user=request.user)
+        template = Top3CategoryDisplay()
+        items = template.get_items(user_interests.interest)
+        return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
+    except UserInterests.DoesNotExist:
+        return redirect('interest')
 
 @login_required
 @apply_loyalty_discount
@@ -564,6 +569,8 @@ def login_user(request):
 def logout_user(request):
     logout(request)
     return redirect('/')
+
+# interest form for user to indicate category they like, items created within past 7 days
 @login_required
 def category_interest(request): 
     categories = Category.objects.all()
@@ -574,19 +581,17 @@ def category_interest(request):
 
     if request.method == 'POST':
         selected_categories = request.POST.get('selected_categories')
-        min_discount = request.POST.get('min_discount')
         item_cd_crit = request.POST.get('item_cd_crit')
         existing_user_interests = UserInterests.objects.filter(user=request.user).first()
 
         if selected_categories:
             selected_categories_list = selected_categories.split(',')
 
-            # Delete old entries
             old_interests = Interest.objects.filter(created_date__lte=timezone.now())
             if old_interests.exists():
                 old_interests.delete()
 
-            interest = Interest.objects.create(created_date=timezone.now(), min_discount= min_discount, item_cd_crit= item_cd_crit)
+            interest = Interest.objects.create(created_date=timezone.now(), discount=True, item_cd_crit= item_cd_crit)
             interest.categories.add(*selected_categories_list)
             interest.save()
             

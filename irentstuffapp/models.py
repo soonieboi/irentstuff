@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.conf import settings
 from abc import ABC, abstractmethod
 from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives  
+from datetime import datetime, timedelta
 
 def send_email(subject, message, email_to):
     email_from = settings.DEFAULT_FROM_EMAIL
@@ -302,26 +303,20 @@ class Message(models.Model):
 class Interest(models.Model):
     categories = models.ManyToManyField(Category)
     created_date = models.DateTimeField(auto_now_add=True)
-    min_discount = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    discount = models.BooleanField(default=True)    # check if any discount available
     item_cd_crit = models.PositiveIntegerField(blank=True, null=True, validators=[MinValueValidator(1), MaxValueValidator(7)])    # item created date criteria, max past 7 days
+    # deposit/buy cost as backup criteria
 
     def __str__(self):
         categories_name = ', '.join([category.name for category in self.categories.all()])
-        return f' interested in {categories_name}, {self.min_discount} percent discount and items created in the past {self.item_cd_crit} days.' 
+        return f' interested in {categories_name} and items created in the past {self.item_cd_crit} days.' 
 
 class UserInterests(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     interest = models.OneToOneField(Interest, on_delete=models.CASCADE)
 
-
-
 # 3 template classes: Top3Categories, ItemMinDiscount, NewlyCreated (more can be created if need be) 
-
 class InterestDisplayTemplate:
-    # def get(self, request):
-    #     user_interests = UserInterests.objects.get(user=request.user)
-    #     items = self.get_items(user_interests.interest)
-    #     return render(request, 'items_list.html', {'items': items})
 
     def get_items(self, interest):
         raise NotImplementedError("Subclasses must implement this method")
@@ -329,18 +324,15 @@ class InterestDisplayTemplate:
 class Top3CategoryDisplay(InterestDisplayTemplate):
     def get_items(self, interest):
         categories = interest.categories.all()
-        # to get the top 1-3 categories
         item  = Item.objects.filter(category__in=categories).order_by('category', 'title')
         return item 
 
-class ItemsMinDiscountDisplay(InterestDisplayTemplate):
+class ItemsDiscountDisplay(InterestDisplayTemplate):
     def get_items(self, interest):
-        min_discount = interest.min_discount if interest.min_discount else 10
-        return Item.objects.filter(discount_percentage__gt = min_discount)
-        # to get the discount beyond 10%
+        discount = interest.discount
+        return Item.objects.filter(discount_percentage__gte = 1)
 
 class NewlyListedItemsDisplay(InterestDisplayTemplate):
     def get_items(self, interest):
         day_filter = interest.item_cd_crit if interest.item_cd_crit else 3
         return Item.objects.filter(created_date__gt = timezone.now() - timedelta(days= day_filter))
-        # to get the created date within past 3 days

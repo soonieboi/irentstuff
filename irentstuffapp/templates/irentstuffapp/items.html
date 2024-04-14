@@ -1,10 +1,24 @@
 {% extends 'irentstuffapp/base.html' %}
 
 {% block content %}
-<button class="tablink" onclick="openPage('{% url 'home' %}')" id="defaultOpen">Home</button>
-<button class="tablink" onclick="openPage('{% url 'fav_categories' %}')">Favourite Categories</button>
-<button class="tablink" onclick="openPage('{% url 'deals' %}')">Items on Discount</button>
-<button class="tablink" onclick="openPage('{% url 'new_items' %}')">New Items</button>
+
+<div class="container-fluid">
+  <div class="row justify-content-center">
+      <div class="col-sm-3">
+          <button class="tablink btn btn-primary btn-block" onclick="openPage('{% url 'home' %}')" id="defaultOpen">Home</button>
+      </div>
+      <div class="col-sm-3">
+          <button class="tablink btn btn-primary btn-block" onclick="openPage('{% url 'fav_categories' %}')">Favourite Categories</button>
+      </div>
+      <div class="col-sm-3">
+          <button class="tablink btn btn-primary btn-block" onclick="openPage('{% url 'deals' %}')">Items on Discount</button>
+      </div>
+      <div class="col-sm-3">
+          <button class="tablink btn btn-primary btn-block" onclick="openPage('{% url 'new_items' %}')">New Items</button>
+      </div>
+  </div>
+</div>
+
 
 <div class="row p-2 w-98 m-0">
   
@@ -79,10 +93,17 @@
 
   <style>
 
-    body, html {
-      height: 100%;
-      margin: 0;
-    }
+  .container-fluid {
+      padding: 0; /* Remove default padding */
+  }
+  
+  .row {
+      margin: 0; /* Remove default margin */
+  }
+  
+  .col-sm-3 {
+      padding: 0; /* Remove padding to fit buttons tightly */
+  }
   
     .tablink {
       background-color: #3240ff;
@@ -93,9 +114,10 @@
       outline-color: white;
       outline-width: medium;
       cursor: pointer;
-      padding: 10px 10px;
+      padding: 15px 0;
       font-size: 14px;
-      width: 25%;
+      width: 100%;
+      text-align: center;
     }
       
     /* Change background color of tab on hover */
@@ -104,18 +126,16 @@
       color: black;
     }
     
-    /* Style the tab content (may not use) */
-    .tabcontent {
-      display: none;
-      padding: 6px 12px;
-      border: 1px solid #ccc;
-      border-top: none;
-      height: 100%;
-    }
     </style>
-      <script>
+    <script>
         function openPage(url) {
+
+        // Check if the user is logged in
+        {% if user.is_authenticated %}
             window.location.href = url;
+        {% else %}
+            window.location.href = '{% url "home" %}';
+        {% endif %}
         }
   
     </script>

@@ -34,7 +34,7 @@ class UserInterestsAdmin(admin.ModelAdmin):
 
 @admin.register(Interest)
 class InterestAdmin(admin.ModelAdmin):
-    list_display = ('created_date', 'get_categories_display', 'min_discount', 'item_cd_crit')
+    list_display = ('created_date', 'get_categories_display', 'discount', 'item_cd_crit')
     search_fields = ("categories__name",)
 
     def get_categories_display(self, obj):

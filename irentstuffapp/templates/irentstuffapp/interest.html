@@ -2,7 +2,7 @@
 {% block content %}
 
 <center>
-    <h2 class="p-3">User Interests</h2>
+    <h2 class="p-3">User Preferences</h2>
 </center>
 <body>
     <div class="container">
@@ -16,13 +16,13 @@
                         <label for="category{{ forloop.counter }}"> {{ category }} </label><br>
                     {% endfor %}
                     <br>
-                    <div>
+                    {% comment %} <div>
                         <label for="min_discount">2. Minimum Discount (%):</label>
                         <input type="number" id="min_discount" name="min_discount" min="1" step="1" required>
                     </div>
-                    <br>
+                    <br> {% endcomment %}
                     <div>
-                        <label for="item_cd_crit ">3.Items created within - days (max 7):</label>
+                        <label for="item_cd_crit ">2.Items created in past x days (max 7):</label>
                         <input type="number" id="item_cd_crit" name="item_cd_crit" min="1" step="1" required>
                     </div>
                     <br>
@@ -42,7 +42,6 @@
         var selectCount = checkboxes.length;
         var selectedCategoriesInput = document.getElementById('selected_categories');
         var errorMessage = document.getElementById('error_message');
-        var minDiscount = document.getElementById('min_discount').value;
         var itemCdCrit = document.getElementById('item_cd_crit').value;
 
         if (selectCount > 3) {
@@ -50,9 +49,6 @@
             return false; // Prevent form submission
         } else if(itemCdCrit > 7){
             errorMessage.innerText = 'Please enter a value between 1-7.';
-            return false;
-        } else if(minDiscount > 100){
-            errorMessage.innerText = 'Please enter a value between 1-100.';
             return false;
         } else {
             errorMessage.innerText = ''; 

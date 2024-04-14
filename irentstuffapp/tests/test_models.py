@@ -1,7 +1,145 @@
 from datetime import datetime, timedelta, timezone
 from django.contrib.auth.models import User
 from django.test import TestCase
-from irentstuffapp.models import Item, Category, Rental, Review, Message
+from django.core import mail
+from irentstuffapp.models import Item, Category, Rental, Review, Message, ItemStatesCaretaker, EmailSender, MessageSender
+
+
+class ObserverPatternTestCase(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="owner", password="testpassword1", email="owner@test.com"
+        )
+        self.renter = User.objects.create_user(
+            username="renter", password="testpassword2", email="user@test.com"
+        )
+
+        self.category = Category.objects.create(name="testcategory")
+
+        self.item = Item.objects.create(
+            owner=self.owner,
+            title="Test Item",
+            description="Test description",
+            category=self.category,
+            condition="excellent",
+            price_per_day=10.00,
+            deposit=50.00,
+            image="item_images/test_image.jpg",
+            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            deleted_date=None,
+        )
+
+        self.rental = Rental.objects.create(
+            owner=self.owner,
+            renter=self.renter,
+            item=self.item,
+            
+            pending_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            confirm_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            complete_date=None,
+            cancelled_date=None,
+
+            start_date=datetime.now().date() + timedelta(1),
+            end_date=datetime.now().date() + timedelta(2),
+            status="pending",
+        )
+
+    def test_rental_state_change(self):
+
+        # Add observers
+        email_sender = EmailSender()
+        message_sender = MessageSender()
+        self.rental.add_observer(email_sender)
+        self.rental.add_observer(message_sender)
+
+        # Change rental state to 'confirmed'
+        self.rental.change_state('confirmed')
+
+        self.rental.refresh_from_db()
+
+        self.assertEqual(self.rental.status, "confirmed") 
+
+        # Check if email are sent
+        self.assertEqual(len(mail.outbox), 2)  # Check if two emails were sent
+
+        # Check if the confirmation email is sent to the owner
+        self.assertEqual(mail.outbox[0].from_email, "admin@irentstuff.app")
+        self.assertEqual(mail.outbox[0].to, [self.owner.email])
+        self.assertEqual(mail.outbox[0].subject, "iRentStuff.app - you have a Rental Acceptance")
+
+        # Check if the confirmation email is sent to the renter
+        self.assertEqual(mail.outbox[1].from_email, "admin@irentstuff.app")
+        self.assertEqual(mail.outbox[1].to, [self.renter.email])
+        self.assertEqual(mail.outbox[1].subject, "iRentStuff.app - You accepted a Rental Offer")
+
+        # Check if message was sent
+        self.assertEqual(len(Message.objects.all()), 1)  # Check if message was sent
+        self.assertEqual(Message.objects.first().id, 1) # message is sent by admin, id is 1
+        self.assertEqual(Message.objects.first().subject, 'Admin')
+        self.assertIn('Rental has been accepted. Period of rental is from ', Message.objects.first().content)
+
+#tests ItemStatesCaretaker and ItemMemento models (ItemMemento is instantiated in Item class)
+class MementoPatternTestCase(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="owner", password="testpassword1"
+        )
+        self.category = Category.objects.create(name="testcategory")
+        self.item = Item.objects.create(
+            owner=self.owner,
+            title="Test Item",
+            description="Test description",
+            category=self.category,
+            condition="excellent",
+            price_per_day=10.00,
+            deposit=50.00,
+            image="item_images/test_image.jpg",
+            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            deleted_date=None,
+        )
+        item = self.item
+        caretaker = ItemStatesCaretaker.objects.filter(item=item).first()
+        if not caretaker:
+            caretaker = ItemStatesCaretaker(item=item)
+
+        caretaker.save_state()
+
+    def test_create_and_restore_state(self):
+        initial_state = {
+            'owner': self.item.owner,
+            'title': self.item.title,
+            'description': self.item.description,
+            'category': self.item.category,
+            'condition': self.item.condition,
+            'price_per_day': self.item.price_per_day,
+            'deposit': self.item.deposit,
+            'image': self.item.image,
+            'created_date': self.item.created_date,
+            'deleted_date': self.item.deleted_date
+        }
+        # Change item state
+        self.item.title = 'Updated Title'
+        self.item.description = 'Updated Description'
+        self.item.save()
+        self.item.refresh_from_db()
+
+        caretaker = ItemStatesCaretaker.objects.filter(item=self.item).first()
+        if not caretaker:
+            caretaker = ItemStatesCaretaker(item=self.item)
+        caretaker.save_state()
+
+        # Restore from caretaker
+        caretakerdel = ItemStatesCaretaker.objects.filter(item=self.item).order_by('-datetime_saved').first()
+        if caretakerdel:
+            caretakerdel.delete()
+
+        caretaker = ItemStatesCaretaker.objects.filter(item=self.item).order_by('-datetime_saved').first()
+        caretaker.restore_state()  # Restore the item to the previous state
+
+        self.item.refresh_from_db()
+
+        self.assertEqual(self.item.title, initial_state['title'])
+
 
 
 class CategoryModelTestCase(TestCase):
@@ -14,10 +152,10 @@ class CategoryModelTestCase(TestCase):
         category = self.category
 
         # Assert that the category was created with the correct name
-        self.assertEquals(category.name, "testcategory")
+        self. assertEqual(category.name, "testcategory")
 
         # Assert that the category was created with the correct type
-        self.assertEquals(str(category), "testcategory")
+        self. assertEqual(str(category), "testcategory")
 
 
 class ItemModelTestCase(TestCase):
@@ -48,14 +186,14 @@ class ItemModelTestCase(TestCase):
         self.assertIsNotNone(item)
 
         # Assert that the attributes of the item are correct
-        self.assertEquals(item.owner, self.owner)
-        self.assertEquals(item.title, "Test Item")
-        self.assertEquals(item.description, "Test description")
-        self.assertEquals(item.category, self.category)
-        self.assertEquals(item.condition, "excellent")
-        self.assertEquals(item.price_per_day, 10.00)
-        self.assertEquals(item.deposit, 50.00)
-        self.assertEquals(item.image, "item_images/test_image.jpg")
+        self. assertEqual(item.owner, self.owner)
+        self. assertEqual(item.title, "Test Item")
+        self. assertEqual(item.description, "Test description")
+        self. assertEqual(item.category, self.category)
+        self. assertEqual(item.condition, "excellent")
+        self. assertEqual(item.price_per_day, 10.00)
+        self. assertEqual(item.deposit, 50.00)
+        self. assertEqual(item.image, "item_images/test_image.jpg")
         self.assertIsNotNone(item.created_date)
         self.assertIsNone(item.deleted_date)
 
@@ -111,24 +249,24 @@ class RentalModelTestCase(TestCase):
         self.assertIsNotNone(rental)
 
         # Assert that the attributes of the rental are correct
-        self.assertEquals(rental.owner, self.owner)
-        self.assertEquals(rental.renter, self.renter)
-        self.assertEquals(rental.item, self.item)
-        self.assertEquals(rental.start_date, datetime(2024, 2, 7, tzinfo=timezone.utc))
-        self.assertEquals(
+        self. assertEqual(rental.owner, self.owner)
+        self. assertEqual(rental.renter, self.renter)
+        self. assertEqual(rental.item, self.item)
+        self. assertEqual(rental.start_date, datetime(2024, 2, 7, tzinfo=timezone.utc))
+        self. assertEqual(
             rental.end_date,
             (datetime(2024, 2, 7, tzinfo=timezone.utc) + timedelta(days=7)).date(),
         )
-        self.assertEquals(
+        self. assertEqual(
             rental.pending_date, datetime(2024, 2, 7, tzinfo=timezone.utc)
         )
-        self.assertEquals(
+        self. assertEqual(
             rental.confirm_date, datetime(2024, 2, 7, tzinfo=timezone.utc)
         )
         self.assertIsNone(rental.complete_date)
         self.assertIsNone(rental.cancelled_date)
-        self.assertEquals(rental.status, "confirmed")
-        self.assertEquals(str(rental), f'{self.item} ({self.owner}, {self.renter}): {self.rental.start_date} - {self.rental.end_date}')
+        self. assertEqual(rental.status, "confirmed")
+        self. assertEqual(str(rental), f'{self.item} ({self.owner}, {self.renter}): {self.rental.start_date} - {self.rental.end_date}')
 
 
 class ReviewModelTestCase(TestCase):
@@ -190,12 +328,12 @@ class ReviewModelTestCase(TestCase):
         self.assertIsNotNone(review)
 
         # Assert that the attributes of the review are correct
-        self.assertEquals(review.author, self.owner)
-        self.assertEquals(review.rental, self.rental)
-        self.assertEquals(review.rating, 5)
-        self.assertEquals(review.comment, "Test comment")
+        self. assertEqual(review.author, self.owner)
+        self. assertEqual(review.rental, self.rental)
+        self. assertEqual(review.rating, 5)
+        self. assertEqual(review.comment, "Test comment")
         self.assertIsNotNone(review.created_date)
-        self.assertEquals(str(review), "Test comment")
+        self. assertEqual(str(review), "Test comment")
 
 
 class MessageModelTestCase(TestCase):
@@ -247,13 +385,13 @@ class MessageModelTestCase(TestCase):
         self.assertIsNotNone(message)
 
         # Assert that the attributes of the message are correct
-        self.assertEquals(message.sender, self.renter)
-        self.assertEquals(message.recipient, self.owner)
-        self.assertEquals(message.item, self.item)
-        self.assertEquals(message.enquiring_user, self.enquiring_user)
-        self.assertEquals(message.subject, "Test Message Subject")
-        self.assertEquals(message.content, "Test Message Content")
+        self. assertEqual(message.sender, self.renter)
+        self. assertEqual(message.recipient, self.owner)
+        self. assertEqual(message.item, self.item)
+        self. assertEqual(message.enquiring_user, self.enquiring_user)
+        self. assertEqual(message.subject, "Test Message Subject")
+        self. assertEqual(message.content, "Test Message Content")
         self.assertFalse(message.is_read)
-        self.assertEquals(str(message),
+        self. assertEqual(str(message),
             "Test Message Subject - renter to owner about Test Item (enquirer)",
         )
