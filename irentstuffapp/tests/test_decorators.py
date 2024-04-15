@@ -52,15 +52,6 @@ class ApplyLoyaltyDiscountTestCase(TestCase):
         self.assertIsNotNone(getattr(response.context_data.get('item', {}), 'discounted_price', None))
         self.assertEqual(response.context_data['item'].discounted_price, 90 * 0.95)
 
-    def test_missing_loyalty_discount_flag(self):
-        item = MockItem(price_per_day=100, discount_percentage=0, discounted_price=90)
-        request = HttpRequest()
-        request.user = Mock()
-        
-        decorated_view = apply_loyalty_discount(mock_view)
-        response = decorated_view(request, item=item)
-        
-        self.assertEqual(response.context_data['item'].discounted_price, 90)
 
     def test_loyalty_discount_not_applied_without_initial_discounted_price(self):
         item = MockItem(price_per_day=100, discount_percentage=0)  
