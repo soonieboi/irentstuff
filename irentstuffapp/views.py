@@ -17,10 +17,24 @@ from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker
 from .models import UserInterests, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay, InterestDisplayTemplate
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, InterestForm
 from .decorators import apply_standard_discount, apply_loyalty_discount
+from .states import ItemState, ConcreteRentalCompleted, ConcreteRentalPending, ConcreteRentalOngoing, ConcreteUserIsItemOwner, ConcreteUserIsNotItemOwner
 from datetime import datetime, timedelta
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 def index(request):
     return HttpResponse("Index")
+
+# common function to manage the discount price displayed on the items list
+def items_discount_price(items):
+    for item in items:
+        if item.discount_percentage > 0:
+            discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
+            item.discounted_price = discounted_price
+        else:
+            item.discounted_price = item.price_per_day
+    return items
 
 @apply_standard_discount
 def items_list(request):
@@ -40,13 +54,7 @@ def items_list(request):
         items = items.filter(category__name__iexact=category_filter)
 
     categories = Category.objects.all()
-
-    for item in items:
-        if item.discount_percentage > 0:
-            discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
-            item.discounted_price = discounted_price
-        else:
-            item.discounted_price = item.price_per_day
+    items = items_discount_price(items)
 
     context = {
         'items': items,
@@ -65,6 +73,8 @@ def deals_view(request):
         user_interests = UserInterests.objects.get(user = request.user)
         template = ItemsDiscountDisplay()
         items = template.get_items(user_interests.interest)
+        items = items_discount_price(items)
+
         return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
     except UserInterests.DoesNotExist:
         return redirect('interest')
@@ -75,6 +85,8 @@ def new_items_view(request):
         user_interests = UserInterests.objects.get(user=request.user)
         template = NewlyListedItemsDisplay()
         items = template.get_items(user_interests.interest)
+        items = items_discount_price(items)
+
         return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
     except UserInterests.DoesNotExist:
         return redirect('interest')
@@ -85,6 +97,8 @@ def fav_categories_view(request):
         user_interests = UserInterests.objects.get(user=request.user)
         template = Top3CategoryDisplay()
         items = template.get_items(user_interests.interest)
+        items = items_discount_price(items)
+
         return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
     except UserInterests.DoesNotExist:
         return redirect('interest')
@@ -195,6 +209,82 @@ def item_detail(request, item_id):
     context = {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews}           
     return render(request, 'irentstuffapp/item_detail.html', context)
 
+@apply_loyalty_discount
+def item_detail_with_state_pattern(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+    is_owner = request.user == item.owner
+    # msgshow = True
+    undos = False
+
+    context = {'item': item, 'user': request.user}
+
+    if is_owner:
+        user_state = ConcreteUserIsItemOwner(context)
+    else:
+        user_state = ConcreteUserIsNotItemOwner(context)
+
+    context.update({'user_state': user_state})
+
+    concrete_item_state = ItemState(context)
+    reviews = concrete_item_state.view_item_reviews(context)
+    #check if there are any messages related to this item
+    # item_messages = concrete_item_state.view_item_messages(context)
+    logging.debug("item_messages: %s", Rental.objects.filter(item=context['item']).exclude(status="completed").exclude(status="cancelled").first())
+
+    msgshow = concrete_item_state.show_item_messages(context)
+
+    renter = None
+    make_review = False
+
+    if request.user.is_authenticated:
+        active_rentals_obj = concrete_item_state.view_active_rental_details(context)
+        logging.debug("active_rentals_obj: %s", active_rentals_obj)
+
+        context['active_rental'] = active_rentals_obj
+        
+        if active_rentals_obj:
+            logging.debug("status: %s", active_rentals_obj.status)
+
+            renter = active_rentals_obj.renter
+
+            #can cancel?
+            #can accept?
+            # Check if there is a rental offer for this item - pending - before start_date
+            #accept_rental_obj = active_rentals_obj.filter(status='pending', start_date__gt=timezone.now()).first()
+            #if accept_rental_obj:
+            if active_rentals_obj.status=='pending':
+                concrete_item_state = ConcreteRentalPending(context)
+
+            #can complete?
+            elif active_rentals_obj.status=='confirmed':
+                concrete_item_state = ConcreteRentalOngoing(context)
+          
+        else:
+            #check if user has undos for this item                
+            caretakercount = ItemStatesCaretaker.objects.filter(item=item).count()
+            if caretakercount > 1:
+                undos = True
+
+            #check if there are any completed rentals that user may want to review
+            review_obj =  concrete_item_state.view_item_reviews_by_user(context)
+            if review_obj:
+                make_review = True
+     
+    cancel_rental = concrete_item_state.can_cancel_rental(context)
+    accept_rental = concrete_item_state.can_accept_rental(context)
+    complete_rental = concrete_item_state.can_complete_rental(context)
+    edit_item = concrete_item_state.can_edit_item(context)
+    add_rental = concrete_item_state.can_add_rental(context)
+
+    logging.debug("edit_item: %s", edit_item)
+
+            
+    if item.discount_percentage > 0:
+        discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
+        item.discounted_price = discounted_price  
+
+    context.update({'is_owner': is_owner, 'make_review': make_review, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews, 'edit_item': edit_item, 'add_rental':add_rental, 'undos':undos})         
+    return render(request, 'irentstuffapp/item_detail.html', context)
 
 @login_required
 def edit_item(request, item_id):
@@ -570,7 +660,7 @@ def logout_user(request):
     logout(request)
     return redirect('/')
 
-# interest form for user to indicate category they like, items created within past 7 days
+# interest form for user to indicate category they like, items created within past 3 days by default
 @login_required
 def category_interest(request): 
     categories = Category.objects.all()

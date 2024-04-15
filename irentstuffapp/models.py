@@ -324,15 +324,15 @@ class InterestDisplayTemplate:
 class Top3CategoryDisplay(InterestDisplayTemplate):
     def get_items(self, interest):
         categories = interest.categories.all()
-        item  = Item.objects.filter(category__in=categories).order_by('category', 'title')
-        return item 
+        return Item.objects.filter(category__in=categories).order_by('category', 'title')
+
 
 class ItemsDiscountDisplay(InterestDisplayTemplate):
     def get_items(self, interest):
         discount = interest.discount
-        return Item.objects.filter(discount_percentage__gte = 1)
+        return Item.objects.filter(discount_percentage__gte = 1).order_by('-discount_percentage')
 
 class NewlyListedItemsDisplay(InterestDisplayTemplate):
     def get_items(self, interest):
         day_filter = interest.item_cd_crit if interest.item_cd_crit else 3
-        return Item.objects.filter(created_date__gt = timezone.now() - timedelta(days= day_filter))
+        return Item.objects.filter(created_date__gt = timezone.now() - timedelta(days= day_filter)).order_by('-created_date')
