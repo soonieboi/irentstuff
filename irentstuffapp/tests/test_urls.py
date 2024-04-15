@@ -3,6 +3,7 @@ from django.urls import reverse, resolve
 from irentstuffapp.views import (
     items_list,
     item_detail,
+    item_detail_with_state_pattern,
     add_item,
     edit_item,
     delete_item,
@@ -36,7 +37,7 @@ class TestUrls(SimpleTestCase):
 
     def test_item_detail_url_resolves(self):
         url = reverse("item_detail", kwargs={"item_id": "4050"})
-        self.assertEquals(resolve(url).func, item_detail)
+        self.assertEquals(resolve(url).func, item_detail_with_state_pattern)
 
     def test_add_item_url_resolves(self):
         url = reverse("add_item")
