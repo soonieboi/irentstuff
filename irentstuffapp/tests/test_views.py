@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from django.http import JsonResponse
 from django.test import TestCase, Client
 from django.urls import reverse
-from irentstuffapp.models import Item, Category, Message, Rental
+from irentstuffapp.models import Item, Category, Message, Rental, Interest, UserInterests, InterestDisplayTemplate, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay
 from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm
 from PIL import Image
 from unittest.mock import patch
@@ -872,3 +872,106 @@ class ItemMessagesViewTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class CategoryInterestTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
+        self.category = Category.objects.create(name="testcategory") 
+        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=True, item_cd_crit= 6)
+        self.selected_categories = [self.category.id]
+
+    def test_category_interest_post(self):
+        # Log in as the owner
+        self.client.login(username="testuser", password="password123")
+        response = self.client.post(reverse("interest"), {
+            'selected_categories': self.selected_categories,
+            'item_cd_crit': 6
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        user_interests = UserInterests.objects.filter(user=self.user).first()
+        self.assertIsNotNone(user_interests)
+
+        interest = user_interests.interest
+        self.assertIsNotNone(interest) 
+
+        self.assertTrue(interest.discount) 
+        self.assertEqual(interest.item_cd_crit, 6) 
+        categories = list(interest.categories.all().values_list('id', flat=True))
+        self.assertListEqual(categories, [self.category.id,])
+
+    def test_category_interest_get(self):
+        response = self.client.get(reverse("interest"))
+        self.assertEqual(response.status_code, 302)
+
+class DiscountDisplayTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
+        self.category = Category.objects.create(name="testcategory") 
+        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=True, item_cd_crit= 11)
+        self.selected_categories = [self.category.id]
+        self.item = Item.objects.create(
+            owner=self.user,
+            title="Test Item",
+            description="Test description",
+            category=self.category,
+            condition="excellent",
+            price_per_day=10.00,
+            deposit=50.00,
+            image="test_image.jpg",
+            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            deleted_date=None,
+            discount_percentage=10
+        )  # to fix tmr
+
+    def test_deals_view(self):
+        self.client.login(username="testuser", password="password123")
+        response = self.client.get(reverse('deals'))
+        self.assertEqual(response.status_code, 302) 
+    
+    def test_fav_category_view_with_interest(self):
+        self.client.login(username="testuser", password="password123")
+        user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
+        response = self.client.get(reverse('deals'))
+        self.assertEqual(response.status_code, 200) 
+
+class NewItemsDisplayTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
+        self.category = Category.objects.create(name="testcategory") 
+        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=False, item_cd_crit= 6)
+        self.selected_categories = [self.category.id]
+
+    def test_new_items_view(self):
+        self.client.login(username="testuser", password="password123")
+        response = self.client.get(reverse('new_items'))
+        self.assertEqual(response.status_code, 302) 
+
+    def test_new_items_view_with_interest(self):
+        self.client.login(username="testuser", password="password123")
+        user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
+        response = self.client.get(reverse('new_items'))
+        self.assertEqual(response.status_code, 200) 
+    
+class Top3DisplayTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
+        self.category = Category.objects.create(name="testcategory") 
+        self.category2 = Category.objects.create(name="testcategory2")
+        self.category3 = Category.objects.create(name="testcategory3")
+        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=False, item_cd_crit= 8)
+        self.selected_categories = [self.category.id, self.category2.id, self.category3.id]
+
+    def test_fav_categories_view(self):
+        self.client.login(username="testuser", password="password123")
+        response = self.client.get(reverse('fav_categories'))
+        self.assertEqual(response.status_code, 302) 
+    
+    def test_fav_category_view_with_interest(self):
+        self.client.login(username="testuser", password="password123")
+        user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
+        response = self.client.get(reverse('fav_categories'))
+        self.assertEqual(response.status_code, 200) 

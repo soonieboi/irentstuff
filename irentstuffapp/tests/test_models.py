@@ -2,7 +2,8 @@ from datetime import datetime, timedelta, timezone
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.core import mail
-from irentstuffapp.models import Item, Category, Rental, Review, Message, ItemStatesCaretaker, EmailSender, MessageSender
+from irentstuffapp.models import Item, Category, Rental, Review, Message, ItemStatesCaretaker, EmailSender, MessageSender, Interest, UserInterests
+from irentstuffapp.models import Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay
 
 
 class ObserverPatternTestCase(TestCase):
@@ -395,3 +396,76 @@ class MessageModelTestCase(TestCase):
         self. assertEqual(str(message),
             "Test Message Subject - renter to owner about Test Item (enquirer)",
         )
+
+class InterestModelTestCase(TestCase):
+    def setUp(self):
+        self.category = Category.objects.create(name='Electronics')
+
+    def test_interest_model_str(self):
+        interest = Interest.objects.create(item_cd_crit=5)
+        interest.categories.add(self.category)
+
+        expected_str = f' interested in {self.category.name} and items created in the past 5 days.'
+        self.assertEqual(str(interest), expected_str)
+
+class UserInterestsModelTestCase(TestCase):
+    def setUp(self):
+
+        self.user = User.objects.create_user(username='testuser', password='test123')
+        category_1 = Category.objects.create(name='Garden')
+        category_2 = Category.objects.create(name='Games')
+        category_3 = Category.objects.create(name='Toys')
+
+        # Create an Interest object for testing
+        self.interest = Interest.objects.create(item_cd_crit=6)
+        self.interest.categories.add(category_1, category_2, category_3)
+
+    def test_user_interests_model(self):
+        # Create a UserInterests object for testing
+        user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
+
+        # Check if the user and interest are correctly associated
+        self.assertEqual(user_interests.user, self.user)
+        self.assertEqual(user_interests.interest, self.interest)
+
+class DisplayTemplateTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(username='testuser')
+        self.category1 = Category.objects.create(name='Category 1')
+        self.category2 = Category.objects.create(name='Category 2')
+        self.item1 = Item.objects.create(title='Item 1', category=self.category1, price_per_day=10.00, discount_percentage=0, deposit = 100.00, owner=self.user,
+                                         created_date= datetime.now(tz=timezone.utc) - timedelta(days=2), image='item_images/test_image.jpg')
+        self.item2 = Item.objects.create(title='Item 2', category=self.category2, price_per_day=20.00, discount_percentage=5, deposit = 100.00, owner=self.user, 
+                                        created_date= datetime.now(tz=timezone.utc) - timedelta(days=10), image='item_images/test_image.jpg')
+        self.interest = Interest.objects.create()
+        self.interest.categories.add(self.category1, self.category2)
+        self.user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
+
+    def test_top3_category_display(self):
+        display = Top3CategoryDisplay()
+        items = display.get_items(self.interest)
+        self.assertEqual(len(items), 2)
+
+    def test_items_discount_display(self):
+        display = ItemsDiscountDisplay()
+        items = display.get_items(self.interest)
+        self.assertEqual(len(items), 1)  
+
+    def test_newly_listed_items_display(self):
+        display = NewlyListedItemsDisplay()
+        items = display.get_items(self.interest)
+        self.assertEqual(len(items), 1)  
+
+    def test_top3_category_display_ordering(self):
+        display = Top3CategoryDisplay()
+        items = display.get_items(self.interest)
+        self.assertEqual(items.first(), self.item1)  
+
+    def test_newly_listed_items_display_time_filter(self):
+        self.item1.created_date = datetime.now(tz=timezone.utc) - timedelta(days=2)
+        self.item1.save()
+        self.item2.created_date = datetime.now(tz=timezone.utc) - timedelta(days=7)
+        self.item2.save()
+        display = NewlyListedItemsDisplay()
+        items = display.get_items(self.interest)
+        self.assertEqual(len(items), 1)  
