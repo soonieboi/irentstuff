@@ -18,5 +18,5 @@ jobs:
       run: pip install bandit
 
     - name: Run Bandit with exclusions and path exclusions
-      run: bandit -r . -ll -s B105,B106 -x irentstuff/irentstuffapp/tests || true
+      run: bandit -r . -ll -s B105,B106 -x irentstuff/irentstuffapp/tests
 
