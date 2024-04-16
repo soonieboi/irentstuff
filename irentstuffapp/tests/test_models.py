@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.core import mail
 from irentstuffapp.models import Item, Category, Rental, Review, Message, ItemStatesCaretaker, EmailSender, MessageSender, Interest, UserInterests
-from irentstuffapp.models import Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay
+from irentstuffapp.models import Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay, InterestDisplayTemplate
 
 
 class ObserverPatternTestCase(TestCase):
@@ -469,3 +469,8 @@ class DisplayTemplateTests(TestCase):
         display = NewlyListedItemsDisplay()
         items = display.get_items(self.interest)
         self.assertEqual(len(items), 1)  
+
+    def test_not_implemented_error(self):
+        display = InterestDisplayTemplate()
+        with self.assertRaises(NotImplementedError):
+            display.get_items(self.interest)
