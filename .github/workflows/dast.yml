@@ -18,11 +18,13 @@ jobs:
         sudo apt-get install -y xvfb
         sudo Xvfb :99 -ac &
         export DISPLAY=:99
-        /usr/share/zaproxy/zap.sh -daemon -port 8090 -host 127.0.0.1 -config api.key=4sgv6ekunoepofqiof59tqbohr &
-        sleep 30
-    
+        /usr/share/zaproxy/zap.sh -daemon -port 8090 -host 127.0.0.1 -config api.key=4sgv6ekunoepofqiof59tqbohr > zap.log 2>&1 &
+        sleep 60  
+
     - name: Install ZAP CLI
       run: pip install zapcli
     
     - name: Run OWASP ZAP Scan
-      run: zap-cli quick-scan -r -s xss,sqli --spider -o zap-report.html -l High https://irentstuff.app/
+      run: | 
+        cat zap.log
+        zap-cli quick-scan -r -s xss,sqli --spider -o zap-report.html -l High https://irentstuff.app/
