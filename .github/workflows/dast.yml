@@ -20,3 +20,10 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         target: 'https://irentstuff.app/'
+        format: 'html' 
+
+    - name: Upload ZAP Scan Report as Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: zap-report
+        path: zap-reports/*.*
