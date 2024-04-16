@@ -21,7 +21,7 @@ jobs:
       run: bandit -r .
 
     - name: Run Bandit with exclusions
-      run: bandit -r . -ll -s B105,B106
+      run: bandit -r . -ll
 
 
       
