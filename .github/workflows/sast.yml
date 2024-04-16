@@ -22,3 +22,5 @@ jobs:
 
     - name: Run Bandit excluding low severity issues
       run: bandit -r . --severity high, medium, critical
+
+      
