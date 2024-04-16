@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      
+
 jobs:
   dast:
     runs-on: ubuntu-latest
@@ -18,13 +18,28 @@ jobs:
         sudo apt-get install -y xvfb
         sudo Xvfb :99 -ac &
         export DISPLAY=:99
-        /usr/share/zaproxy/zap.sh -daemon -port 8090 -host 127.0.0.1 -config api.key=4sgv6ekunoepofqiof59tqbohr > zap.log 2>&1 &
-        sleep 60  
+
+    - name: Verify ZAP Installation and Start ZAP Daemon
+      run: |
+        ZAP_PATH=$(find / -name zap.sh -print 2>/dev/null | head -n 1)
+        if [[ ! -z "$ZAP_PATH" ]]; then
+          echo "ZAP found at $ZAP_PATH"
+          nohup bash "$ZAP_PATH" -daemon -port 8090 -host 127.0.0.1 -config api.key=4sgv6ekunoepofqiof59tqbohr > zap.log 2>&1 &
+          echo "Waiting for ZAP to initialize..."
+          sleep 60
+          echo "ZAP initialization completed."
+        else
+          echo "ZAP installation failed. zap.sh not found."
+          exit 1
+        fi
 
     - name: Install ZAP CLI
       run: pip install zapcli
-    
+
+    - name: Print ZAP Daemon Logs
+      run: cat zap.log || true
+
     - name: Run OWASP ZAP Scan
-      run: | 
-        cat zap.log
-        zap-cli quick-scan -r -s xss,sqli --spider -o zap-report.html -l High https://irentstuff.app/
+      run: |
+        zap-cli --zap-url http://localhost --port 8090 status
+        zap-cli --zap-url http://localhost --port 8090 quick-scan -r -s xss,sqli --spider -o zap-report.html -l High https://irentstuff.app/
