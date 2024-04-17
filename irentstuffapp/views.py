@@ -13,8 +13,8 @@ from django.utils.html import strip_tags
 from django.utils import timezone 
 from django.db.models import Count
 from django.conf import settings
-from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender, Interest
-from .models import UserInterests, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay, InterestDisplayTemplate
+from .models import (Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender, Interest,
+UserInterests, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay, InterestDisplayTemplate)
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, InterestForm
 from .decorators import apply_standard_discount, apply_loyalty_discount
 from .states import ItemState, ConcreteRentalCompleted, ConcreteRentalPending, ConcreteRentalOngoing, ConcreteUserIsItemOwner, ConcreteUserIsNotItemOwner
@@ -206,7 +206,7 @@ def item_detail(request, item_id):
         discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
         item.discounted_price = discounted_price  
 
-    context = {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews}           
+    context = {'item': item, 'is_owner': is_owner, 'make_review': make_review, 'active_rental': active_rentals_obj, 'accept_rental': accept_rental, 'complete_rental': complete_rental, 'cancel_rental': cancel_rental, 'renter': renter, 'mystuff': request.resolver_match.url_name == 'items_list_my', 'msgshow':msgshow, 'reviews':reviews, 'undos':undos}           
     return render(request, 'irentstuffapp/item_detail.html', context)
 
 @apply_loyalty_discount
