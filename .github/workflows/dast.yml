@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Pull and Run ZAP Scan Docker Image
-          run: |
+        run: |
             docker pull sherminho/zap-custom:latest
             docker run sherminho/zap-custom:latest
     # - name: Checkout
