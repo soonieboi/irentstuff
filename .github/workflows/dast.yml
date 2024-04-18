@@ -15,13 +15,8 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
       
-    - name: Run OWASP ZAP Full Scan with Docker
-      run: |
-        docker pull owasp/zap2docker-stable
-        docker run --platform linux/amd64 --user root -v ${{ github.workspace }}/irentstuff:/zap/wrk/:rw --network=host -t owasp/zap2docker-stable zap-full-scan.py -t https://irentstuff.app/ -J report_json.json -w report_md.md -r report_html.html
-
-    - name: Upload ZAP Scan Report as Artifact
-      uses: actions/upload-artifact@v2
+    - name: Run ZAP Scan
+      uses: zaproxy/action-baseline@v0.4.0
       with:
-        name: zap-report
-        path: ${{ github.workspace }}/irentstuff/zap-reports/*.*
+        token: ${{ secrets.GITHUB_TOKEN }}
+        target: 'https://irentstuff.app/'
