@@ -15,7 +15,8 @@ jobs:
       - name: Pull and Run ZAP Scan Docker Image
         run: |
             docker pull sherminho/zap-custom:latest
-            docker run sherminho/zap-custom:latest
+            docker run -e TARGET_URL=https://irentstuff.app/ sherminho/zap-custom:latest
+           
     # - name: Checkout
     #   uses: actions/checkout@v2
       
