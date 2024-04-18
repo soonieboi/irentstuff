@@ -12,11 +12,15 @@ jobs:
   zap_scan:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Pull and Run ZAP Scan Docker Image
+          run: |
+            docker pull sherminho/zap-custom:latest
+            docker run sherminho/zap-custom:latest
+    # - name: Checkout
+    #   uses: actions/checkout@v2
       
-    - name: Run ZAP Scan
-      uses: zaproxy/action-baseline@v0.4.0
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        target: 'https://irentstuff.app/'
+    # - name: Run ZAP Scan
+    #   uses: zaproxy/action-baseline@v0.4.0
+    #   with:
+    #     token: ${{ secrets.GITHUB_TOKEN }}
+    #     target: 'https://irentstuff.app/'
