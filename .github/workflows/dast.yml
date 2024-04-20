@@ -12,10 +12,24 @@ jobs:
   zap_scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull and Run ZAP Scan Docker Image
-        run: |
-            docker pull sherminho/zap-custom:latest
-            docker run -e TARGET_URL=https://irentstuff.app/ sherminho/zap-custom:latest
+    - name: Checkout repo
+      uses: actions/checkout@v2
+
+    - name: ZAP Scan
+      uses: zaproxy/action-baseline@v0.4.0
+      with:
+        target: 'https://irentstuff.app/'
+      
+
+
+# jobs:
+#   zap_scan:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Pull and Run ZAP Scan Docker Image
+#         run: |
+#             docker pull sherminho/zap-custom:latest
+#             docker run -e TARGET_URL=https://irentstuff.app/ sherminho/zap-custom:latest
            
     # - name: Checkout
     #   uses: actions/checkout@v2
