@@ -31,4 +31,8 @@ urlpatterns = [
     path('reset_password_complete',auth_views.PasswordResetCompleteView.as_view(template_name='irentstuffapp/password_reset_complete.html'),name="password_reset_complete"),
     path('stuff/', views.items_list, name='items_list'),
     path('stuff/category/<int:category_id>/', views.items_list, name='items_list_by_category'), 
+    path('interest/', views.category_interest, name='interest'),
+    path('deals/', views.deals_view, name='deals'),
+    path('newitems/', views.new_items_view, name='new_items'),
+    path('favcategories/', views.fav_categories_view, name='fav_categories'),
 ]

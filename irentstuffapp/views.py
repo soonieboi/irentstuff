@@ -13,17 +13,28 @@ from django.utils.html import strip_tags
 from django.utils import timezone 
 from django.db.models import Count
 from django.conf import settings
-from .models import Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender
-from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm
+from .models import (Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender, Interest,
+UserInterests, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay, InterestDisplayTemplate)
+from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, InterestForm
 from .decorators import apply_standard_discount, apply_loyalty_discount
 from .states import ItemState, ConcreteRentalCompleted, ConcreteRentalPending, ConcreteRentalOngoing, ConcreteUserIsItemOwner, ConcreteUserIsNotItemOwner
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
 def index(request):
     return HttpResponse("Index")
+
+# common function to manage the discount price displayed on the items list
+def items_discount_price(items):
+    for item in items:
+        if item.discount_percentage > 0:
+            discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
+            item.discounted_price = discounted_price
+        else:
+            item.discounted_price = item.price_per_day
+    return items
 
 @apply_standard_discount
 def items_list(request):
@@ -43,13 +54,7 @@ def items_list(request):
         items = items.filter(category__name__iexact=category_filter)
 
     categories = Category.objects.all()
-
-    for item in items:
-        if item.discount_percentage > 0:
-            discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
-            item.discounted_price = discounted_price
-        else:
-            item.discounted_price = item.price_per_day
+    items = items_discount_price(items)
 
     context = {
         'items': items,
@@ -61,6 +66,42 @@ def items_list(request):
     }
 
     return render(request, 'irentstuffapp/items.html', context)
+
+@login_required
+def deals_view(request):
+    try:
+        user_interests = UserInterests.objects.get(user = request.user)
+        template = ItemsDiscountDisplay()
+        items = template.get_items(user_interests.interest)
+        items = items_discount_price(items)
+
+        return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
+    except UserInterests.DoesNotExist:
+        return redirect('interest')
+
+@login_required
+def new_items_view(request):
+    try:
+        user_interests = UserInterests.objects.get(user=request.user)
+        template = NewlyListedItemsDisplay()
+        items = template.get_items(user_interests.interest)
+        items = items_discount_price(items)
+
+        return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
+    except UserInterests.DoesNotExist:
+        return redirect('interest')
+
+@login_required
+def fav_categories_view(request):
+    try:
+        user_interests = UserInterests.objects.get(user=request.user)
+        template = Top3CategoryDisplay()
+        items = template.get_items(user_interests.interest)
+        items = items_discount_price(items)
+
+        return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
+    except UserInterests.DoesNotExist:
+        return redirect('interest')
 
 @login_required
 @apply_loyalty_discount
@@ -619,3 +660,39 @@ def logout_user(request):
     logout(request)
     return redirect('/')
 
+# interest form for user to indicate category they like, items created within past 3 days by default
+@login_required
+def category_interest(request): 
+    categories = Category.objects.all()
+    
+    context = {
+        'categories': categories
+    }
+
+    if request.method == 'POST':
+        selected_categories = request.POST.get('selected_categories')
+        item_cd_crit = request.POST.get('item_cd_crit')
+        existing_user_interests = UserInterests.objects.filter(user=request.user).first()
+
+        if selected_categories:
+            selected_categories_list = selected_categories.split(',')
+
+            old_interests = Interest.objects.filter(created_date__lte=timezone.now())
+            if old_interests.exists():
+                old_interests.delete()
+
+            interest = Interest.objects.create(created_date=timezone.now(), discount=True, item_cd_crit= item_cd_crit)
+            interest.categories.add(*selected_categories_list)
+            interest.save()
+            
+        if existing_user_interests:    
+            existing_user_interests.interest = interest
+
+            existing_user_interests.save()
+            return redirect('items_list') 
+        else:
+            user_interests = UserInterests.objects.create(user=request.user, interest=interest)
+            user_interests.save()
+            return redirect('items_list')
+
+    return render(request, 'irentstuffapp/interest.html', context)

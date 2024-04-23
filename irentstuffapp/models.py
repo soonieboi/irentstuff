@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.conf import settings
 from abc import ABC, abstractmethod
 from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives  
+from datetime import datetime, timedelta
 
 def send_email(subject, message, email_to):
     email_from = settings.DEFAULT_FROM_EMAIL
@@ -298,3 +299,40 @@ class Message(models.Model):
 
     def __str__(self):
         return f'{self.subject} - {self.sender} to {self.recipient} about {self.item.title} ({self.enquiring_user.username})'
+
+class Interest(models.Model):
+    categories = models.ManyToManyField(Category)
+    created_date = models.DateTimeField(auto_now_add=True)
+    discount = models.BooleanField(default=True)    # check if any discount available
+    item_cd_crit = models.PositiveIntegerField(blank=True, null=True, validators=[MinValueValidator(1), MaxValueValidator(7)])    # item created date criteria, max past 7 days
+    # deposit/buy cost as backup criteria
+
+    def __str__(self):
+        categories_name = ', '.join([category.name for category in self.categories.all()])
+        return f' interested in {categories_name} and items created in the past {self.item_cd_crit} days.' 
+
+class UserInterests(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    interest = models.OneToOneField(Interest, on_delete=models.CASCADE)
+
+# 3 template classes: Top3Categories, ItemMinDiscount, NewlyCreated (more can be created if need be) 
+class InterestDisplayTemplate:
+
+    def get_items(self, interest):
+        raise NotImplementedError("Subclasses must implement this method")
+
+class Top3CategoryDisplay(InterestDisplayTemplate):
+    def get_items(self, interest):
+        categories = interest.categories.all()
+        return Item.objects.filter(category__in=categories).order_by('category', 'title')
+
+
+class ItemsDiscountDisplay(InterestDisplayTemplate):
+    def get_items(self, interest):
+        discount = interest.discount
+        return Item.objects.filter(discount_percentage__gte = 1).order_by('-discount_percentage')
+
+class NewlyListedItemsDisplay(InterestDisplayTemplate):
+    def get_items(self, interest):
+        day_filter = interest.item_cd_crit if interest.item_cd_crit else 3
+        return Item.objects.filter(created_date__gt = timezone.now() - timedelta(days= day_filter)).order_by('-created_date')
