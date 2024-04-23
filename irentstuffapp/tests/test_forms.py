@@ -10,8 +10,9 @@ from irentstuffapp.forms import (
     ItemReviewForm,
     RentalForm,
     MessageForm,
+    InterestForm,
 )
-from irentstuffapp.models import Item, Category, Rental
+from irentstuffapp.models import Item, Category, Rental, Interest, UserInterests
 from PIL import Image
 import io
 
@@ -307,6 +308,30 @@ class MessageFormTestCase(TestCase):
 
         # Instantiate the form with form data
         form = MessageForm(data=form_data)
+
+        # Check if the form is valid
+        self.assertTrue(form.is_valid())
+
+class InterestFormTestCase(TestCase):
+    def setUp(self):
+        self.interest = Interest.objects.create( 
+            discount= True, 
+            item_cd_crit=6,
+            created_date=datetime.now(),
+        )
+        self.interest.categories.set([Category.objects.create(name='Garden'), Category.objects.create(name='Toys'), Category.objects.create(name='Electronics')])
+
+    def test_valid_form(self):
+        # Prepare form data
+        form_data = {
+            "categories": [Category.objects.create(name='Garden'), Category.objects.create(name='Toys'), Category.objects.create(name='Electronics')],
+            "discount": True, 
+            "item_cd_crit": 6,
+            "created_date": datetime.now()
+        }
+
+        # Instantiate the form with form data
+        form = InterestForm(instance=self.interest, data=form_data)
 
         # Check if the form is valid
         self.assertTrue(form.is_valid())

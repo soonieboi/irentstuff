@@ -2,11 +2,12 @@ from datetime import datetime, timezone, timedelta, date
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.files.base import ContentFile
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpRequest
 from django.test import TestCase, Client
 from django.urls import reverse
-from irentstuffapp.models import Item, Category, Message, Rental
+from irentstuffapp.models import Item, Category, Message, Rental, Interest, UserInterests, InterestDisplayTemplate, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay
 from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm
+from irentstuffapp.views import index
 from PIL import Image
 from unittest.mock import patch
 from django.core.exceptions import ValidationError
@@ -304,6 +305,14 @@ class ItemsListViewTestCase(TestCase):
         self.assertContains(response, "Test Item 1")
         self.assertNotContains(response, "Test Item 2")
 
+    def test_items_list_category_filter(self):
+        # Make a GET request to the items_list view with a search query
+        response = self.client.get(reverse("items_list_my") + "?search=&category=testcategory")
+        # Check that item 1 & item2 displayed (matched the search query)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Test Item 1")
+        self.assertContains(response, "Test Item 2")
+
 
 class AddItemViewTestCase(TestCase):
     def setUp(self):
@@ -432,6 +441,18 @@ class EditItemViewTestCase(TestCase):
         self.assertIn(self.image2.name.split(".")[0], self.item.image.name)
 
 
+    def test_edit_item_not_authenticated_owner(self):
+        self.notowner = User.objects.create_user(username="testuser2", email="test@example.com", password="password1234")
+        # Login as the not item owner
+        self.client.login(username="testuser2", password="password1234")
+
+        response = self.client.get(
+            reverse("edit_item", kwargs={"item_id": self.item.id}),
+        )
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.item.title, "Test Item")
+
     def tearDown(self):
         # Get the paths to the image files
         image2_path = self.item.image.path
@@ -499,6 +520,20 @@ class DeleteItemViewTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Item.objects.count(), initial_item_count)  # Check if item count did not decrease
         self.assertIsNotNone(Item.objects.filter(pk=self.item.id).first()) 
+    
+    def test_delete_item_not_authenticated_owner(self):
+        self.notowner = User.objects.create_user(username="testuser2", email="test@example.com", password="password1234")
+        # Login as anyone else
+        self.client.login(username="testuser2", password="password1234")
+
+        initial_item_count = Item.objects.count()
+
+        # Make a POST request to delete_item view
+        response = self.client.post(reverse("delete_item", kwargs={"item_id": self.item.id}))
+
+        # Check that the item was successfully deleted
+        self.assertEqual(response.status_code, 302)  # Redirect after successful deletion
+        self.assertEqual(Item.objects.count(), initial_item_count)  # Check if item count is decreased
 
 class ItemDetailViewTestCase(TestCase):
     def setUp(self):
@@ -817,6 +852,12 @@ class AddReviewViewTestCase(TestCase):
         # Check if the response redirects to the item detail page
         self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.id}))
 
+    def test_render_add_review_template(self):
+        self.client.login(username="testowner", password="password123")
+        response = self.client.get(reverse("add_review", kwargs={"item_id": self.item.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'irentstuffapp/review_add.html')
+
 
 class ItemMessagesViewTestCase(TestCase):
     def setUp(self):
@@ -872,3 +913,129 @@ class ItemMessagesViewTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class CategoryInterestTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
+        self.category = Category.objects.create(name="testcategory") 
+        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=True, item_cd_crit= 6)
+        self.selected_categories = [self.category.id]
+
+    def test_category_interest_post(self):
+        # Log in as the owner
+        self.client.login(username="testuser", password="password123")
+        response = self.client.post(reverse("interest"), {
+            'selected_categories': self.selected_categories,
+            'item_cd_crit': 6
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        user_interests = UserInterests.objects.filter(user=self.user).first()
+        self.assertIsNotNone(user_interests)
+
+        interest = user_interests.interest
+        self.assertIsNotNone(interest) 
+
+        self.assertTrue(interest.discount) 
+        self.assertEqual(interest.item_cd_crit, 6) 
+        categories = list(interest.categories.all().values_list('id', flat=True))
+        self.assertListEqual(categories, [self.category.id,])
+
+    def test_category_interest_get(self):
+        response = self.client.get(reverse("interest"))
+        self.assertEqual(response.status_code, 302) 
+
+    def test_existing_user_interest_redirect(self):
+        self.client.login(username="testuser", password="password123")
+        existing_user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
+
+        response = self.client.post(reverse("interest"), {
+            'selected_categories': self.selected_categories,
+            'item_cd_crit': 3
+        }, follow=True)
+        self.assertRedirects(response, reverse('items_list'))
+
+    def test_render_interest_template(self):
+        self.client.login(username="testuser", password="password123")
+        response = self.client.get(reverse("interest"))
+        self.assertTemplateUsed(response, 'irentstuffapp/interest.html')
+
+class DiscountDisplayTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
+        self.category = Category.objects.create(name="testcategory") 
+        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=True, item_cd_crit= 11)
+        self.selected_categories = [self.category.id]
+        self.item = Item.objects.create(
+            owner=self.user,
+            title="Test Item",
+            description="Test description",
+            category=self.category,
+            condition="excellent",
+            price_per_day=10.00,
+            deposit=50.00,
+            image="test_image.jpg",
+            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            deleted_date=None,
+            discount_percentage=10
+        )  # to fix tmr
+
+    def test_deals_view(self):
+        self.client.login(username="testuser", password="password123")
+        response = self.client.get(reverse('deals'))
+        self.assertEqual(response.status_code, 302) 
+    
+    def test_deals_view_with_interest(self):
+        self.client.login(username="testuser", password="password123")
+        user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
+        response = self.client.get(reverse('deals'), {'items': self.item}, follow = True)
+        self.assertEqual(response.status_code, 200) 
+
+class NewItemsDisplayTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
+        self.category = Category.objects.create(name="testcategory") 
+        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=False, item_cd_crit= 6)
+        self.selected_categories = [self.category.id]
+
+    def test_new_items_view(self):
+        self.client.login(username="testuser", password="password123")
+        response = self.client.get(reverse('new_items'))
+        self.assertEqual(response.status_code, 302) 
+
+    def test_new_items_view_with_interest(self):
+        self.client.login(username="testuser", password="password123")
+        user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
+        response = self.client.get(reverse('new_items'))
+        self.assertEqual(response.status_code, 200) 
+    
+class Top3DisplayTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
+        self.category = Category.objects.create(name="testcategory") 
+        self.category2 = Category.objects.create(name="testcategory2")
+        self.category3 = Category.objects.create(name="testcategory3")
+        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=False, item_cd_crit= 8)
+        self.selected_categories = [self.category.id, self.category2.id, self.category3.id]
+
+    def test_fav_categories_view(self):
+        self.client.login(username="testuser", password="password123")
+        response = self.client.get(reverse('fav_categories'))
+        self.assertEqual(response.status_code, 302) 
+    
+    def test_fav_category_view_with_interest(self):
+        self.client.login(username="testuser", password="password123")
+        user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
+        response = self.client.get(reverse('fav_categories'))
+        self.assertEqual(response.status_code, 200) 
+
+class IndexViewTestCase(TestCase):
+    def test_index_view(self):
+    
+        request = HttpRequest()
+        response = index(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Index")
