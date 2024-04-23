@@ -12,18 +12,30 @@ jobs:
   zap_scan:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
+    - name: Checkout repo
       uses: actions/checkout@v2
-      
-    - name: OWASP ZAP Full Scan
-      uses: zaproxy/action-full-scan@v0.2.0
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        target: 'https://irentstuff.app/'
-        format: 'html' 
 
-    - name: Upload ZAP Scan Report as Artifact
-      uses: actions/upload-artifact@v2
+    - name: ZAP Scan
+      uses: zaproxy/action-baseline@v0.4.0
       with:
-        name: zap-report
-        path: zap-reports/*.*
+        target: 'https://irentstuff.app/'
+      
+
+
+# jobs:
+#   zap_scan:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Pull and Run ZAP Scan Docker Image
+#         run: |
+#             docker pull sherminho/zap-custom:latest
+#             docker run -e TARGET_URL=https://irentstuff.app/ sherminho/zap-custom:latest
+           
+    # - name: Checkout
+    #   uses: actions/checkout@v2
+      
+    # - name: Run ZAP Scan
+    #   uses: zaproxy/action-baseline@v0.4.0
+    #   with:
+    #     token: ${{ secrets.GITHUB_TOKEN }}
+    #     target: 'https://irentstuff.app/'
