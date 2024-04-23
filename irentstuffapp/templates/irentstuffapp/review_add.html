@@ -15,22 +15,77 @@
   });
 </script>
 
+<!-- Include necessary CSS for star ratings -->
+<style>
+  .star-rating {
+    display: inline-block;
+    unicode-bidi: bidi-override;
+    color: #cccccc;
+    font-size: 30px;
+    cursor: pointer;
+  }
+
+  .star-rating span {
+    display: inline-block;
+    position: relative;
+    width: 1.0em;
+    color: #696969;
+  }
+
+  .star-rating span:before {
+    content: '\2605';
+    position: relative;
+    opacity: 0.5;
+  }
+
+  .star-rating span:hover:before,
+  .star-rating span:hover ~ span:before,
+  .star-rating span.clicked:before {
+    opacity: 1;
+  }
+  .star-rating span.clicked {
+    opacity: 1;
+    color: #ff9933;
+  }
+</style>
+
+<!-- Fix stars alignment & make sure got grey bg before selection -->
 <form class="shadow-sm bg-light col-11 col-sm-8 mx-auto card p-3 b-0" method="post">
   {% csrf_token %}
-
   {{ form.rental.label_tag }}
   {{ form.rental }}
 
   <label for="rating">Rating:</label>
-  {{ form.rating }}
+  <div class="star-rating" id="starRating">
+    <span data-value="1"></span>
+    <span data-value="2"></span>
+    <span data-value="3"></span>
+    <span data-value="4"></span>
+    <span data-value="5"></span>
+    <span data-value="6"></span>
+  </div>
+  <input type="hidden" name="rating" id="ratingInput">
 
   <label for="comment">Comment:</label>
   {{ form.comment }}
 
   <button class="btn btn-primary col-md-3 my-4" type="submit">Submit Review</button>
-
-
 </form>
 
+<!-- Include jQuery for easier JavaScript handling -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+    $('.star-rating span').click(function () {
+      var ratingValue = $(this).attr('data-value');
+      $('#ratingInput').val(ratingValue);
+
+      // Mark clicked star and previous stars as 'clicked' for visual feedback
+      $(this).addClass('clicked');
+      $(this).prevAll().addClass('clicked');
+      $(this).nextAll().removeClass('clicked');
+    });
+  });
+</script>
 
 {% endblock %}
