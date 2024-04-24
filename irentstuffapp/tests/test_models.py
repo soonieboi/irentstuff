@@ -152,10 +152,10 @@ class CategoryModelTestCase(TestCase):
         category = self.category
 
         # Assert that the category was created with the correct name
-        self. assertEqual(category.name, "testcategory")
+        self.assertEqual(category.name, "testcategory")
 
         # Assert that the category was created with the correct type
-        self. assertEqual(str(category), "testcategory")
+        self.assertEqual(str(category), "testcategory")
 
 
 class ItemModelTestCase(TestCase):
@@ -186,14 +186,14 @@ class ItemModelTestCase(TestCase):
         self.assertIsNotNone(item)
 
         # Assert that the attributes of the item are correct
-        self. assertEqual(item.owner, self.owner)
-        self. assertEqual(item.title, "Test Item")
-        self. assertEqual(item.description, "Test description")
-        self. assertEqual(item.category, self.category)
-        self. assertEqual(item.condition, "excellent")
-        self. assertEqual(item.price_per_day, 10.00)
-        self. assertEqual(item.deposit, 50.00)
-        self. assertEqual(item.image, "item_images/test_image.jpg")
+        self.assertEqual(item.owner, self.owner)
+        self.assertEqual(item.title, "Test Item")
+        self.assertEqual(item.description, "Test description")
+        self.assertEqual(item.category, self.category)
+        self.assertEqual(item.condition, "excellent")
+        self.assertEqual(item.price_per_day, 10.00)
+        self.assertEqual(item.deposit, 50.00)
+        self.assertEqual(item.image, "item_images/test_image.jpg")
         self.assertIsNotNone(item.created_date)
         self.assertIsNone(item.deleted_date)
 
@@ -249,24 +249,24 @@ class RentalModelTestCase(TestCase):
         self.assertIsNotNone(rental)
 
         # Assert that the attributes of the rental are correct
-        self. assertEqual(rental.owner, self.owner)
-        self. assertEqual(rental.renter, self.renter)
-        self. assertEqual(rental.item, self.item)
-        self. assertEqual(rental.start_date, datetime(2024, 2, 7, tzinfo=timezone.utc))
-        self. assertEqual(
+        self.assertEqual(rental.owner, self.owner)
+        self.assertEqual(rental.renter, self.renter)
+        self.assertEqual(rental.item, self.item)
+        self.assertEqual(rental.start_date, datetime(2024, 2, 7, tzinfo=timezone.utc))
+        self.assertEqual(
             rental.end_date,
             (datetime(2024, 2, 7, tzinfo=timezone.utc) + timedelta(days=7)).date(),
         )
-        self. assertEqual(
+        self.assertEqual(
             rental.pending_date, datetime(2024, 2, 7, tzinfo=timezone.utc)
         )
-        self. assertEqual(
+        self.assertEqual(
             rental.confirm_date, datetime(2024, 2, 7, tzinfo=timezone.utc)
         )
         self.assertIsNone(rental.complete_date)
         self.assertIsNone(rental.cancelled_date)
-        self. assertEqual(rental.status, "confirmed")
-        self. assertEqual(str(rental), f'{self.item} ({self.owner}, {self.renter}): {self.rental.start_date} - {self.rental.end_date}')
+        self.assertEqual(rental.status, "confirmed")
+        self.assertEqual(str(rental), f'{self.item} ({self.owner}, {self.renter}): {self.rental.start_date} - {self.rental.end_date}')
 
 
 class ReviewModelTestCase(TestCase):
@@ -328,12 +328,12 @@ class ReviewModelTestCase(TestCase):
         self.assertIsNotNone(review)
 
         # Assert that the attributes of the review are correct
-        self. assertEqual(review.author, self.owner)
-        self. assertEqual(review.rental, self.rental)
-        self. assertEqual(review.rating, 5)
-        self. assertEqual(review.comment, "Test comment")
+        self.assertEqual(review.author, self.owner)
+        self.assertEqual(review.rental, self.rental)
+        self.assertEqual(review.rating, 5)
+        self.assertEqual(review.comment, "Test comment")
         self.assertIsNotNone(review.created_date)
-        self. assertEqual(str(review), "Test comment")
+        self.assertEqual(str(review), "Test comment")
 
 
 class MessageModelTestCase(TestCase):
@@ -385,13 +385,13 @@ class MessageModelTestCase(TestCase):
         self.assertIsNotNone(message)
 
         # Assert that the attributes of the message are correct
-        self. assertEqual(message.sender, self.renter)
-        self. assertEqual(message.recipient, self.owner)
-        self. assertEqual(message.item, self.item)
-        self. assertEqual(message.enquiring_user, self.enquiring_user)
-        self. assertEqual(message.subject, "Test Message Subject")
-        self. assertEqual(message.content, "Test Message Content")
+        self.assertEqual(message.sender, self.renter)
+        self.assertEqual(message.recipient, self.owner)
+        self.assertEqual(message.item, self.item)
+        self.assertEqual(message.enquiring_user, self.enquiring_user)
+        self.assertEqual(message.subject, "Test Message Subject")
+        self.assertEqual(message.content, "Test Message Content")
         self.assertFalse(message.is_read)
-        self. assertEqual(str(message),
+        self.assertEqual(str(message),
             "Test Message Subject - renter to owner about Test Item (enquirer)",
         )
