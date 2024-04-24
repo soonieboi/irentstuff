@@ -14,6 +14,10 @@
         {% if field.name == 'description' %}
         <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" name="{{ field.html_name }}" rows="6"
             style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
+        {% elif field.name == 'festive_discounts' %}
+        <label for="id_festive_discounts">(this will automatically include your item in sitewide festive discounts between 5-10% on purchase prices during festive holidays)</label>
+        <div class="form-group"><input type="checkbox" id="id_festive_discounts" name="{{ field.html_name }}">
+        </div>
         {% elif field.field.widget.input_type == 'select' %}
         <select class="form-control select-arrow {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" name="{{ field.html_name }}">
             {% for choice in field.field.choices %}
@@ -23,6 +27,10 @@
         {% elif field.name == 'image' %}
         <div><input type="file" class="form-control-file {% if field.errors %}is-invalid{% endif %}" name="{{ field.html_name }}"
                 id="{{ field.id_for_label }}" accept="image/*" multiple></div>
+        {% elif field.name == 'deposit' %}
+        <label for="{{ field.id_for_label }}">/ Purchase price</label>
+        <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1" name="{{ field.html_name }}"
+            style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
         {% else %}
         <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1" name="{{ field.html_name }}"
             style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
@@ -31,7 +39,7 @@
             <small class="text-danger">{{ error }}</small>
         {% endfor %}
     </div>
-    {% endfor %} 
+    {% endfor %}
 
     <button class="btn btn-primary col-md-3 my-4" type="submit">Add item</button>
 </form>

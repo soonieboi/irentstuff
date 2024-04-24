@@ -1,0 +1,88 @@
+{% extends 'irentstuffapp/base.html' %}
+
+{% block content %}
+
+
+
+<center>
+  <h1 class="p-4">Create Purchase for {{item.title}}</h1>
+</center>
+<script>
+
+
+  $(function() {
+      // Use date picker for start and end dates
+      $("#id_deal_date").datepicker({dateformat:"dd-mm-yy"});
+  });
+</script>
+<div class="container mt-5">
+    <form class="shadow-sm bg-light col-11 col-sm-8 mx-auto card p-3 b-0" method="post">
+        {% csrf_token %}
+        <!-- {{ form }} -->
+        <div class="form-group">
+            <label for="id_deal_date">Deal Date:</label>
+            {{ form.deal_date }}
+        </div>
+        <div class="form-group">
+          <label for="id_buyerid">Buyer (ID):</label>
+          {{ form.buyerid }}
+      </div>
+      <p></p>
+      <div class="card bg-light p-3 mb-3">
+        <div id="priceCalculations">
+          <p id="buyPrice">Buy Price: </p>
+          {% if festive_discount_description %}
+          <p id="festiveDiscountPrice" style="color: red;">Festive Discount Price: </p>
+          {% endif %}
+        </div>
+      </div>
+        <button class="btn btn-primary col-md-3 my-4" type="submit">Create</button>
+        
+    </form>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+          const buyerInput = document.querySelector('.autocomplete');
+    
+          buyerInput.addEventListener('blur', async function () {
+              const username = buyerInput.value.trim();
+              if (username !== '') {
+                  const response = await fetch(`/check_user_exists/${username}/`);
+                  const data = await response.json();
+    
+                  if (data.exists) {
+                      if (username == "{{ user.get_username }}") {
+                        alert('You cannot purchase your own item');
+                        buyerInput.value = "";
+                      }
+                  } 
+                  else {
+                      alert('User does not exist!');
+                      buyerInput.value = "";
+                  }
+              }
+          });
+          function getNormalPrice() {
+            const depositPrice = {{ item.deposit }};
+            let buyPrice = depositPrice;
+            document.getElementById('buyPrice').textContent = 'Buy Price: ' + depositPrice.toFixed(2);
+          }
+          function getFestivePrice() {
+            const depositPrice = {{ item.deposit }};
+            let festiveDiscountDescription = "{{ festive_discount_description }}";
+            const festiveDiscountPercentage = {{ festive_discount_percentage }};
+            const festiveDiscountPrice = {{ festive_discount_price }};
+            
+            let buyPrice = depositPrice;
+
+            document.getElementById('buyPrice').textContent = 'Buy Price: ' + depositPrice.toFixed(2);
+            document.getElementById('festiveDiscountPrice').textContent = 'Festive Discount Price for ' + festiveDiscountDescription + ': ' + festiveDiscountPrice.toFixed(2) + '(-' + festiveDiscountPercentage + '%)';
+          }
+          getNormalPrice();
+          getFestivePrice();          
+      });
+    </script>
+</div>
+
+
+{% endblock %}
