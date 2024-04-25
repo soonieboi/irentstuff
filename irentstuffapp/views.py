@@ -1,25 +1,27 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.core.mail import EmailMultiAlternatives
 from django.contrib.auth.decorators import login_required
+from django.core.mail import EmailMultiAlternatives
 from django.db.models import Count
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
+from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils import timezone
+
+from .decorators import apply_standard_discount, apply_loyalty_discount
+from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, PurchaseForm
 from .models import (Item, Rental, Message, Category, Purchase,
                      ItemStatesCaretaker, RentalEmailSender, RentalMessageSender, PurchaseEmailSender, PurchaseMessageSender,
                      Interest, UserInterests, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay
                      )
-from .decorators import apply_standard_discount, apply_loyalty_discount
-from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, PurchaseForm
 from .states import (
     ItemState, ConcreteRentalPending, ConcretePurchaseReserved, ConcreteRentalOrPurchaseOngoing,
     ConcreteUserIsItemOwner, ConcreteUserIsNotItemOwner
 )
+
 import logging
 
 logging.basicConfig(level=logging.DEBUG)

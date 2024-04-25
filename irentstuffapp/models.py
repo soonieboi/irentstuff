@@ -1,12 +1,14 @@
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.html import strip_tags
+
 from .festive_discount_strategies import (
     DefaultDiscountStrategy,
     LabourDayDiscountStrategy,
@@ -15,7 +17,6 @@ from .festive_discount_strategies import (
     TestDiscountStrategy
     )
 
-from datetime import datetime, timedelta
 
 def send_email(subject, message, email_to):
     email_from = settings.DEFAULT_FROM_EMAIL
@@ -162,7 +163,7 @@ class Item(models.Model):
                 item.discounted_price = discounted_price
             return item
         return wrapper
-    
+
     # Discount strategy for Purchase discounts
     def calculate_festive_discount_price(self):
         strategies = [
@@ -176,20 +177,15 @@ class Item(models.Model):
         # Iterate through strategies to check if activation_date matches today
         for strategy_class in strategies:
             if timezone.now().date() == strategy_class.activation_date:
-                
+
                 discount_strategy = strategy_class()
                 break
-        
-        # if self.festive_discounts:
-        #     if timezone.now().date() == timezone.datetime(2024, 4, 23).date():
-        #         discount_strategy = TestDiscountStrategy()  # Example: Change strategy based on festive discounts option
-        
+
         (self.festive_discount_description,
          self.festive_discount_percentage,
          self.festive_discount_price) = discount_strategy.calculate_discounted_deposit(self.deposit)
-        
-        self.save()
 
+        self.save()
 
     def create_memento(self):
         """
@@ -499,26 +495,30 @@ class Message(models.Model):
     def __str__(self):
         return f'{self.subject} - {self.sender} to {self.recipient} about {self.item.title} ({self.enquiring_user.username})'
 
+
 class Interest(models.Model):
     categories = models.ManyToManyField(Category)
     created_date = models.DateTimeField(auto_now_add=True)
     discount = models.BooleanField(default=True)    # check if any discount available
-    item_cd_crit = models.PositiveIntegerField(blank=True, null=True, validators=[MinValueValidator(1), MaxValueValidator(7)])    # item created date criteria, max past 7 days
+    item_cd_crit = models.PositiveIntegerField(blank=True, null=True, validators=[MinValueValidator(1), MaxValueValidator(7)]) # item created date criteria, max past 7 days
     # deposit/buy cost as backup criteria
 
     def __str__(self):
         categories_name = ', '.join([category.name for category in self.categories.all()])
-        return f' interested in {categories_name} and items created in the past {self.item_cd_crit} days.' 
+        return f' interested in {categories_name} and items created in the past {self.item_cd_crit} days.'
+
 
 class UserInterests(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     interest = models.OneToOneField(Interest, on_delete=models.CASCADE)
 
-# 3 template classes: Top3Categories, ItemMinDiscount, NewlyCreated (more can be created if need be) 
+
+# 3 template classes: Top3Categories, ItemMinDiscount, NewlyCreated (more can be created if need be)
 class InterestDisplayTemplate:
 
     def get_items(self, interest):
         raise NotImplementedError("Subclasses must implement this method")
+
 
 class Top3CategoryDisplay(InterestDisplayTemplate):
     def get_items(self, interest):
@@ -529,9 +529,10 @@ class Top3CategoryDisplay(InterestDisplayTemplate):
 class ItemsDiscountDisplay(InterestDisplayTemplate):
     def get_items(self, interest):
         discount = interest.discount
-        return Item.objects.filter(discount_percentage__gte = 1).order_by('-discount_percentage')
+        return Item.objects.filter(discount_percentage__gte=1).order_by('-discount_percentage')
+
 
 class NewlyListedItemsDisplay(InterestDisplayTemplate):
     def get_items(self, interest):
         day_filter = interest.item_cd_crit if interest.item_cd_crit else 3
-        return Item.objects.filter(created_date__gt = timezone.now() - timedelta(days= day_filter)).order_by('-created_date')
+        return Item.objects.filter(created_date__gt=timezone.now() - timedelta(days=day_filter)).order_by('-created_date')

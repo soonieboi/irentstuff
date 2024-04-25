@@ -1,8 +1,9 @@
 from django import forms
-from django.contrib.auth.models import User
-from .models import Item, Rental, Message, Review, Interest, Purchase
-from django.utils import timezone
 from django.contrib.auth.forms import UserChangeForm
+from django.contrib.auth.models import User
+from django.utils import timezone
+
+from .models import Item, Rental, Message, Review, Interest, Purchase
 
 
 class NameChangeForm(UserChangeForm):
@@ -123,7 +124,8 @@ class MessageForm(forms.ModelForm):
         model = Message
         fields = ['content']
 
+
 class InterestForm(forms.ModelForm):
     class Meta:
         model = Interest
-        fields = ['categories'] 
+        fields = ['categories']

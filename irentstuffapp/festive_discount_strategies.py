@@ -36,7 +36,7 @@ class HariRayaHajiDiscountStrategy(DiscountStrategy):
         discount_percentage = 0.1
         discount_price = float(deposit) * (1-discount_percentage)
         return discount_description, discount_percentage*100, discount_price
-    
+
 
 class TestDiscountStrategy(DiscountStrategy):
     activation_date = datetime.date(2024, 5, 4)
@@ -50,7 +50,7 @@ class TestDiscountStrategy(DiscountStrategy):
 
 class DefaultDiscountStrategy(DiscountStrategy):
     activation_date = None
-    
+
     def calculate_discounted_deposit(self, deposit):
         discount_description = None
         discount_percentage = None

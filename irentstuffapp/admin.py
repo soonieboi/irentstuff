@@ -19,7 +19,6 @@ class RentalAdmin(admin.ModelAdmin):
     search_fields = ("item__title",  "owner__username", "start_date", )
 
 
-# admin.site.register(Purchase)
 @admin.register(Purchase)
 class PurchaseAdmin(admin.ModelAdmin):
     list_display = ('item', 'owner', 'buyer', 'deal_date', 'status')
@@ -38,10 +37,12 @@ class MessageAdmin(admin.ModelAdmin):
     list_filter = ("item", )
     search_fields = ("content", "enquiring_user__username",)
 
+
 @admin.register(UserInterests)
 class UserInterestsAdmin(admin.ModelAdmin):
     list_display = ('user', 'interest')
     search_fields = ("user__username",)
+
 
 @admin.register(Interest)
 class InterestAdmin(admin.ModelAdmin):
@@ -50,5 +51,5 @@ class InterestAdmin(admin.ModelAdmin):
 
     def get_categories_display(self, obj):
         return ", ".join([category.name for category in obj.categories.all()])
-    
+
     get_categories_display.short_description = 'Categories'

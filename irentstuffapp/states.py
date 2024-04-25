@@ -1,5 +1,6 @@
-from .models import Item, Rental, Purchase, Message, Review
 from django.utils import timezone
+
+from .models import Item, Rental, Purchase, Message, Review
 
 
 class ItemState:
@@ -50,7 +51,7 @@ class ItemState:
 
     def can_complete_purchase(self, context):
         return False
-    
+
     def is_sold(self, context):
         if context['item'].availability == 'sold':
             return True
