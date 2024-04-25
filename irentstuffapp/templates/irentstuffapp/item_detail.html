@@ -237,6 +237,17 @@
             <span class="fs-6">Deal Date:</span>
             <span class="fs-6">{{ pending_purchase.deal_date }}</span>
           </p>
+          <p class="card-text">
+            <span class="fs-6">Buy Price:</span>
+            <span class="fs-6">${{ item.deposit }}</span>
+          </p>
+            {% if item.festive_discount_description %}
+          <p class="card-text">
+            <span class="fs-6" style="color: red;">Festive Discount Price:</span>
+            <span class="fs-6" style="color: red;">${{ item.festive_discount_price }} ({{ item.festive_discount_percentage|floatformat }}%)</span>
+          </p>
+            {% endif %}
+          </p>
           {% if is_owner %}
           <p class="card-text">
             <span class="fs-6">Buyer:</span>

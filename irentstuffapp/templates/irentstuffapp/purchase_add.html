@@ -75,8 +75,8 @@
             
             let buyPrice = depositPrice;
 
-            document.getElementById('buyPrice').textContent = 'Buy Price: ' + depositPrice.toFixed(2);
-            document.getElementById('festiveDiscountPrice').textContent = 'Festive Discount Price for ' + festiveDiscountDescription + ': ' + festiveDiscountPrice.toFixed(2) + '(-' + festiveDiscountPercentage + '%)';
+            document.getElementById('buyPrice').textContent = 'Buy Price: $' + depositPrice.toFixed(2);
+            document.getElementById('festiveDiscountPrice').textContent = 'Festive Discount Price for ' + festiveDiscountDescription + ': $' + festiveDiscountPrice.toFixed(2) + ' (-' + festiveDiscountPercentage + '%)';
           }
           getNormalPrice();
           getFestivePrice();          

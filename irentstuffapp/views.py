@@ -170,7 +170,6 @@ def item_detail_with_state_pattern(request, item_id):
     reviews = concrete_item_state.view_item_reviews(context)
     # check if there are any messages related to this item
     # item_messages = concrete_item_state.view_item_messages(context)
-    logging.debug("item_messages: %s", Rental.objects.filter(item=context['item']).exclude(status="completed").exclude(status="cancelled").first())
 
     msgshow = concrete_item_state.show_item_messages(context)
 
@@ -181,14 +180,10 @@ def item_detail_with_state_pattern(request, item_id):
         active_rentals_obj = concrete_item_state.view_active_rental_details(context)
         pending_purchase_obj = concrete_item_state.view_pending_purchase_details(context)
 
-        logging.debug("active_rentals_obj: %s", active_rentals_obj)
-        logging.debug("active_rentals_obj: %s", pending_purchase_obj)
-
         context['active_rental'] = active_rentals_obj
         context['pending_purchase'] = pending_purchase_obj
 
         if active_rentals_obj:
-            logging.debug("status: %s", active_rentals_obj.status)
 
             renter = active_rentals_obj.renter
             context.update({'renter': renter})
@@ -206,7 +201,6 @@ def item_detail_with_state_pattern(request, item_id):
                 concrete_item_state = ConcreteRentalOrPurchaseOngoing(context)
 
         if pending_purchase_obj:
-            logging.debug("status: %s", pending_purchase_obj.status)
 
             buyer = pending_purchase_obj.buyer
             context.update({'buyer': buyer})
@@ -239,8 +233,6 @@ def item_detail_with_state_pattern(request, item_id):
     add_purchase = concrete_item_state.can_add_purchase(context)
     edit_item = concrete_item_state.can_edit_item(context)
     is_sold = concrete_item_state.is_sold(context)
-
-    logging.debug("edit_item: %s", edit_item)
 
     if item.discount_percentage > 0:
         discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
@@ -452,16 +444,26 @@ def item_messages(request, item_id, userid=0):
 
         active_rentals = False
         accept_rental = False
+        pending_purchase = False
+        accept_purchase = False
         if item.owner == request.user:
             # Check if there are active rentals for this item
             active_rentals_obj = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
+            pending_purchase_obj = Purchase.objects.filter(item=item).exclude(status="complete").exclude(status="cancelled").first()
+            
             if active_rentals_obj:
                 active_rentals = True
+            if pending_purchase_obj:
+                pending_purchase = True
         else:
             # Check if there is a rental offer for this item - pending - before start_date
             accept_rental_obj = Rental.objects.filter(item=item, renter=request.user, status='pending', start_date__gt=timezone.now()).first()
+            accept_purchase_obj = Purchase.objects.filter(item=item, buyer=request.user, status='reserved', deal_date__gt=timezone.now()).first()
+            
             if accept_rental_obj:
                 accept_rental = True
+            if accept_purchase_obj:
+                accept_purchase = True
 
         item_messages = Message.objects.filter(item=item, enquiring_user=enquiring_user).order_by('timestamp')
         return render(request, 'irentstuffapp/item_messages.html',
@@ -470,7 +472,9 @@ def item_messages(request, item_id, userid=0):
                        'item_messages': item_messages,
                        'message_form': message_form,
                        'active_rentals': active_rentals,
-                       'accept_rental': accept_rental})
+                       'accept_rental': accept_rental,
+                       'pending_purchase': pending_purchase,
+                       'accept_purchase': accept_purchase})
 
 
 @login_required
@@ -654,7 +658,6 @@ def add_purchase(request, item_id, username=""):
     festive_discount_description = item.festive_discount_description
     festive_discount_percentage = item.festive_discount_percentage
     festive_discount_price = item.festive_discount_price
-    print(f"{festive_discount_description}, {festive_discount_percentage}, {festive_discount_price}")
 
     if request.method == 'POST':
         form = PurchaseForm(request.POST)
