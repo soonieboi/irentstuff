@@ -1,33 +1,25 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse
-from django.http import HttpResponse, JsonResponse, Http404, HttpResponseForbidden, HttpResponseBadRequest
-from django.core.paginator import Paginator
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives    
-from django.core.exceptions import ValidationError
+from django.core.mail import EmailMultiAlternatives
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from django.utils import timezone 
-from django.db.models import Count
-from django.conf import settings
-from .models import (Item, Rental, Message, Review, Category, ItemStatesCaretaker, EmailSender, MessageSender, Interest,
-UserInterests, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay, InterestDisplayTemplate)
-from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, InterestForm
+from django.utils import timezone
+from .models import (Item, Rental, Message, Category, Purchase,
+                     ItemStatesCaretaker, RentalEmailSender, RentalMessageSender, PurchaseEmailSender, PurchaseMessageSender,
+                     Interest, UserInterests, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay
+                     )
 from .decorators import apply_standard_discount, apply_loyalty_discount
 from .forms import ItemForm, ItemEditForm, RentalForm, MessageForm, ItemReviewForm, PurchaseForm
-from .models import (Item, Rental, Message, Review, Category, Purchase,
-                     ItemStatesCaretaker, RentalEmailSender, RentalMessageSender, PurchaseEmailSender, PurchaseMessageSender
-                     )
 from .states import (
-    ItemState, ConcreteRentalCompleted, ConcreteRentalPending, ConcretePurchaseReserved, ConcreteRentalOrPurchaseOngoing,
+    ItemState, ConcreteRentalPending, ConcretePurchaseReserved, ConcreteRentalOrPurchaseOngoing,
     ConcreteUserIsItemOwner, ConcreteUserIsNotItemOwner
 )
-from datetime import datetime, timedelta
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -35,6 +27,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 def index(request):
     return HttpResponse("Index")
+
 
 # common function to manage the discount price displayed on the items list
 def items_discount_price(items):
@@ -45,6 +38,7 @@ def items_discount_price(items):
         else:
             item.discounted_price = item.price_per_day
     return items
+
 
 @apply_standard_discount
 def items_list(request):
@@ -77,10 +71,11 @@ def items_list(request):
 
     return render(request, 'irentstuffapp/items.html', context)
 
+
 @login_required
 def deals_view(request):
     try:
-        user_interests = UserInterests.objects.get(user = request.user)
+        user_interests = UserInterests.objects.get(user=request.user)
         template = ItemsDiscountDisplay()
         items = template.get_items(user_interests.interest)
         items = items_discount_price(items)
@@ -88,6 +83,7 @@ def deals_view(request):
         return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
     except UserInterests.DoesNotExist:
         return redirect('interest')
+
 
 @login_required
 def new_items_view(request):
@@ -101,6 +97,7 @@ def new_items_view(request):
     except UserInterests.DoesNotExist:
         return redirect('interest')
 
+
 @login_required
 def fav_categories_view(request):
     try:
@@ -112,6 +109,7 @@ def fav_categories_view(request):
         return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
     except UserInterests.DoesNotExist:
         return redirect('interest')
+
 
 @login_required
 @apply_loyalty_discount
@@ -148,92 +146,6 @@ def add_review(request, item_id):
             return redirect('item_detail', item_id=item_id)  # Redirect to item detail page
 
     return render(request, 'irentstuffapp/review_add.html', {'form': form, 'item': item})
-
-
-"""
-# This view is deprecated. The new view is item_detail_with_state_pattern()
-@apply_loyalty_discount
-def item_detail(request, item_id):
-    item = get_object_or_404(Item, pk=item_id)
-    reviews = Review.objects.filter(rental__item=item)
-    is_owner = request.user == item.owner
-    msgshow = True
-    undos = False
-
-    if is_owner:
-        # check if there are any messages related to this item
-        item_messages = Message.objects.filter(item=item)
-        if not item_messages:
-            msgshow = False
-
-    accept_rental = False
-    cancel_rental = False
-    complete_rental = False
-    renter = None
-    active_rentals_obj = None
-    make_review = False
-
-    if request.user.is_authenticated:
-
-        if item.owner == request.user:
-            # Check if there are active rentals for this item
-            active_rentals_obj = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
-            if active_rentals_obj:
-                renter = active_rentals_obj.renter
-
-                # can cancel?
-                if active_rentals_obj.status == 'pending':
-                    cancel_rental = True
-                # can complete?
-                elif active_rentals_obj.status == 'confirmed':
-                    complete_rental = True
-            else:
-                # check if user has undos for this item
-
-                caretakercount = ItemStatesCaretaker.objects.filter(item=item).count()
-                if caretakercount > 1:
-                    undos = True
-
-        else:
-            # Check if there is a rental for this item related to this user
-            active_rentals_obj = Rental.objects.filter(item=item, renter=request.user).exclude(status="completed").exclude(status="cancelled").first()
-            if active_rentals_obj:
-
-                renter = active_rentals_obj.renter
-
-                # can accept?
-                # Check if there is a rental offer for this item - pending - before start_date
-                # accept_rental_obj = active_rentals_obj.filter(status='pending', start_date__gt=timezone.now()).first()
-                # if accept_rental_obj:
-                if active_rentals_obj.status == 'pending':
-                    if active_rentals_obj.start_date > timezone.now().date():
-                        accept_rental = True
-                    else:
-                        active_rentals_obj = None
-
-            # check if there are any completed rentals that user may want to review
-            review_obj = Rental.objects.filter(renter=request.user, item=item, status='completed')
-            if review_obj:
-                make_review = True
-
-    if item.discount_percentage > 0:
-        discounted_price = item.price_per_day * (100 - item.discount_percentage) / 100
-        item.discounted_price = discounted_price
-
-    context = {'item': item,
-               'is_owner': is_owner,
-               'make_review': make_review,
-               'active_rental': active_rentals_obj,
-               'accept_rental': accept_rental,
-               'complete_rental': complete_rental,
-               'cancel_rental': cancel_rental,
-               'renter': renter,
-               'mystuff': request.resolver_match.url_name == 'items_list_my',
-               'msgshow': msgshow,
-               'reviews': reviews,
-               'undos': undos}
-    return render(request, 'irentstuffapp/item_detail.html', context)
-"""
 
 
 @apply_loyalty_discount
@@ -390,7 +302,7 @@ def delete_item(request, item_id):
     if pending_rental.exists():
         messages.error(request, 'You cannot delete an item when rental status is Pending or Confirmed!')
         return redirect('item_detail', item_id=item.id)
-    
+
     pending_purchases = Purchase.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled")
     if pending_purchases.exists():
         messages.error(request, 'You cannot delete an item when purchase status is Reserved or Confirmed!')
@@ -520,11 +432,13 @@ def item_messages(request, item_id, userid=0):
                 # messages.success(request, 'Rental added successfully!')
                 # return redirect('item_detail', item_id=item.id)
                 # return redirect(reverse('current_url_name'))
-                # return render(request, 'irentstuffapp/item_messages.html', {'item': item, 'enquiring_user':enquiring_user.username,'item_messages': item_messages, 'message_form': message_form})
+                # return render(request, 'irentstuffapp/item_messages.html', {'item': item, 'enquiring_user':enquiring_user.username,
+                #                                                             'item_messages': item_messages, 'message_form': message_form})
 
                 # item_messages = Message.objects.filter(item=item, enquiring_user = userid).order_by('timestamp')
 
-                # return render(request, 'irentstuffapp/item_messages.html', {'item': item, 'enquiring_user':enquiring_user.username,'item_messages': item_messages, 'message_form': message_form})
+                # return render(request, 'irentstuffapp/item_messages.html', {'item': item, 'enquiring_user':enquiring_user.username,
+                #                                                             'item_messages': item_messages, 'message_form': message_form})
         else:
             message_form = MessageForm(initial={'item': item, 'recipient': item.owner})
 
@@ -577,7 +491,7 @@ def add_rental(request, item_id, username=""):
     if request.user != item.owner:
         # Optionally, you can handle unauthorized access here
         return redirect('item_detail', item_id=item.id)
-    
+
     if item.availability == 'sold':
         messages.error(request, '''Item has been sold. You cannot rent it out. To rent out another copy of this item,
                        please create a new entry using the "Add Stuff" button.''')
@@ -714,7 +628,7 @@ def add_purchase(request, item_id, username=""):
     # Check if the logged-in user is the creator of the item
     if request.user != item.owner:
         return redirect('item_detail', item_id=item.id)
-    
+
     # Redirect if item is sold
     if item.availability == 'sold':
         messages.error(request, '''Item has been sold. You cannot sell it again. To rent out another copy of this item,
@@ -732,7 +646,7 @@ def add_purchase(request, item_id, username=""):
     if pending_purchases.exists():
         messages.error(request, 'There are pending purchases for this item. You cannot add a new purchase.')
         return redirect('item_detail', item_id=item.id)
-    
+
     # Recalculate festive discount price so that it is accurate
     item.calculate_festive_discount_price()
     festive_discount_description = item.festive_discount_description
@@ -915,11 +829,12 @@ def logout_user(request):
     logout(request)
     return redirect('/')
 
+
 # interest form for user to indicate category they like, items created within past 3 days by default
 @login_required
-def category_interest(request): 
+def category_interest(request):
     categories = Category.objects.all()
-    
+
     context = {
         'categories': categories
     }
@@ -936,15 +851,15 @@ def category_interest(request):
             if old_interests.exists():
                 old_interests.delete()
 
-            interest = Interest.objects.create(created_date=timezone.now(), discount=True, item_cd_crit= item_cd_crit)
+            interest = Interest.objects.create(created_date=timezone.now(), discount=True, item_cd_crit=item_cd_crit)
             interest.categories.add(*selected_categories_list)
             interest.save()
-            
-        if existing_user_interests:    
+
+        if existing_user_interests:
             existing_user_interests.interest = interest
 
             existing_user_interests.save()
-            return redirect('items_list') 
+            return redirect('items_list')
         else:
             user_interests = UserInterests.objects.create(user=request.user, interest=interest)
             user_interests.save()
