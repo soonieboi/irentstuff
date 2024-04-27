@@ -42,8 +42,6 @@ class RentalObserver(ABC):
 class RentalEmailSender(RentalObserver):
     def update(self, rental):
         # Logic to send email to the renter or owner based on rental state change
-        rental_message = "email sender received update from rental "
-        print(rental_message + rental.item.title + " " + rental.status + " " + rental.renter.username + " " + rental.owner.username)
 
         if rental.status == 'pending':
             subject = 'iRentStuff.app - You added a Rental'
@@ -337,6 +335,7 @@ class Purchase(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='purchases_as_owner')
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     deal_date = models.DateField()
+    deal_reserved_date = models.DateTimeField(blank=True, null=True)
     deal_confirmed_date = models.DateTimeField(blank=True, null=True)
     deal_complete_date = models.DateTimeField(blank=True, null=True)
     deal_cancelled_date = models.DateTimeField(blank=True, null=True)
@@ -367,7 +366,7 @@ class Purchase(models.Model):
     def change_state(self, new_state):
         # Change the state of the rental
         if new_state == 'reserved':
-            self.deal_date = timezone.now()
+            self.deal_reserved_date = timezone.now()
         elif new_state == 'confirmed':
             self.confirm_date = timezone.now()
         elif new_state == 'completed':
@@ -394,7 +393,6 @@ class PurchaseEmailSender(PurchaseObserver):
     def update(self, purchase):
         # Logic to send email to the buyer or owner based on purchase state change
         purchase_message = "email sender received update from purchase "
-        print(purchase_message + purchase.item.title + " " + purchase.status + " " + purchase.buyer.username + " " + purchase.owner.username)
 
         if purchase.status == 'reserved':
             subject = 'iRentStuff.app - You made a Purchase reservation'
