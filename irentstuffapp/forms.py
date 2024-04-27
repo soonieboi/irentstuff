@@ -41,7 +41,6 @@ class ItemReviewForm(forms.ModelForm):
     def __init__(self, user, item, *args, **kwargs):
         super(ItemReviewForm, self).__init__(*args, **kwargs)
         # Limit the rental choices to the ones belonging to the current user and current item
-        print(f"item: {item}")
         self.fields['rental'].queryset = Rental.objects.filter(renter=user, item=item, status='completed')
         self.fields['rental'].label_from_instance = self.custom_label_from_instance
 
@@ -110,7 +109,7 @@ class PurchaseForm(forms.ModelForm):
         deal_date = cleaned_data.get('deal_date')
 
         if deal_date < timezone.now().date():
-            raise forms.ValidationError('Start date cannot be earlier than today.')
+            raise forms.ValidationError('Purchase date cannot be earlier than today.')
 
         return cleaned_data
 

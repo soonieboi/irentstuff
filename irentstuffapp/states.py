@@ -87,17 +87,11 @@ class ConcretePurchaseReserved(ItemState):
         return isinstance(context['user_state'], ConcreteUserIsItemOwner)
 
     def can_accept_purchase(self, context):
-        print("Here")
         if isinstance(context['user_state'], ConcreteUserIsNotItemOwner):
-            print("Why la")
             try:
-                print("Ok leh")
-                print(context['pending_purchase'].deal_date)
                 if context['pending_purchase'].deal_date > timezone.now().date():
-                    print("Good")
                     return True
             except Exception:
-                print("walaueh")
                 return False
 
 

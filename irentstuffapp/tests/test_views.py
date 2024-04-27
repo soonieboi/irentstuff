@@ -1,18 +1,22 @@
-from datetime import datetime, timezone, timedelta, date
+from datetime import datetime, timedelta, date
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.files.base import ContentFile
 from django.http import JsonResponse, HttpRequest
 from django.test import TestCase, Client
 from django.urls import reverse
-from irentstuffapp.models import Item, Category, Message, Rental, Interest, UserInterests, InterestDisplayTemplate, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay
-from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm
+from irentstuffapp.models import (Item, Category, Message, Rental, Purchase, Interest, UserInterests,
+                                  InterestDisplayTemplate, Top3CategoryDisplay, ItemsDiscountDisplay, NewlyListedItemsDisplay)
+from irentstuffapp.forms import ItemForm, ItemEditForm, RentalForm, PurchaseForm
 from irentstuffapp.views import index
 from PIL import Image
 from unittest.mock import patch
 from django.core.exceptions import ValidationError
 import io
 import os
+import pytz
+
+sgt = pytz.timezone('Asia/Singapore')
 
 
 class InboxViewTestCase(TestCase):
@@ -37,7 +41,7 @@ class InboxViewTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="item_images/test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -50,7 +54,7 @@ class InboxViewTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="item_images/test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -263,7 +267,7 @@ class ItemsListViewTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="item_images/test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
         self.item2 = Item.objects.create(
@@ -275,7 +279,7 @@ class ItemsListViewTestCase(TestCase):
             price_per_day=50.00,
             deposit=250.00,
             image="item_images/test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -393,7 +397,7 @@ class EditItemViewTestCase(TestCase):
             deposit=50.00,
             discount_percentage=0,
             image=self.image1,
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
         self.image1_path = self.item.image.path
@@ -412,7 +416,6 @@ class EditItemViewTestCase(TestCase):
             "deposit": 100.00,
             "discount_percentage": 5,
             "image": self.image2,
-            
         }
 
         # Make a POST request to edit_item view with form data
@@ -421,7 +424,6 @@ class EditItemViewTestCase(TestCase):
             form_data,
             follow=True,
         )
-
 
         form = ItemEditForm(data=form_data, files={"image": self.image2})
 
@@ -440,7 +442,6 @@ class EditItemViewTestCase(TestCase):
         self.assertEqual(self.item.deposit, 100.00)
         self.assertIn(self.image2.name.split(".")[0], self.item.image.name)
 
-
     def test_edit_item_not_authenticated_owner(self):
         self.notowner = User.objects.create_user(username="testuser2", email="test@example.com", password="password1234")
         # Login as the not item owner
@@ -449,7 +450,7 @@ class EditItemViewTestCase(TestCase):
         response = self.client.get(
             reverse("edit_item", kwargs={"item_id": self.item.id}),
         )
-        
+
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.item.title, "Test Item")
 
@@ -459,7 +460,7 @@ class EditItemViewTestCase(TestCase):
 
         # Check if the files exist and delete them
         if os.path.exists(image2_path):
-            os.remove(image2_path)        
+            os.remove(image2_path)
         if os.path.exists(self.image1_path):
             os.remove(self.image1_path)
 
@@ -477,7 +478,7 @@ class DeleteItemViewTestCase(TestCase):
             condition="excellent",
             price_per_day=10.00,
             deposit=50.00,
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -496,7 +497,7 @@ class DeleteItemViewTestCase(TestCase):
         self.assertEqual(Item.objects.count(), initial_item_count - 1)  # Check if item count is decreased
         self.assertIsNone(Item.objects.filter(pk=self.item.id).first())  # Check if item is deleted from database
 
-    def test_delete_item_with_rental(self): 
+    def test_delete_item_with_rental(self):
         self.renter = User.objects.create_user(username="testrenter", email="rent@example.com", password="password321")
 
         self.rental = Rental.objects.create(
@@ -519,8 +520,32 @@ class DeleteItemViewTestCase(TestCase):
         # Check that the item was successfully deleted
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Item.objects.count(), initial_item_count)  # Check if item count did not decrease
-        self.assertIsNotNone(Item.objects.filter(pk=self.item.id).first()) 
-    
+        self.assertIsNotNone(Item.objects.filter(pk=self.item.id).first())
+
+    def test_delete_item_with_purchase(self):
+        self.buyer = User.objects.create_user(username="testbuyer", email="buy@example.com", password="password321")
+
+        self.purchase = Purchase.objects.create(
+            buyer=self.buyer,
+            owner=self.user,
+            item=self.item,
+            deal_date=date.today(),
+            status="confirmed",
+        )
+        # Login as the owner
+        self.client.login(username="testuser", password="password123")
+
+        # Get the initial count of items
+        initial_item_count = Item.objects.count()
+
+        # Make a POST request to delete_item view
+        response = self.client.post(reverse("delete_item", kwargs={"item_id": self.item.id}))
+
+        # Check that the item was successfully deleted
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Item.objects.count(), initial_item_count)  # Check if item count did not decrease
+        self.assertIsNotNone(Item.objects.filter(pk=self.item.id).first())
+
     def test_delete_item_not_authenticated_owner(self):
         self.notowner = User.objects.create_user(username="testuser2", email="test@example.com", password="password1234")
         # Login as anyone else
@@ -535,6 +560,7 @@ class DeleteItemViewTestCase(TestCase):
         self.assertEqual(response.status_code, 302)  # Redirect after successful deletion
         self.assertEqual(Item.objects.count(), initial_item_count)  # Check if item count is decreased
 
+
 class ItemDetailViewTestCase(TestCase):
     def setUp(self):
         self.client = Client()
@@ -548,7 +574,7 @@ class ItemDetailViewTestCase(TestCase):
             condition="excellent",
             price_per_day=10.00,
             deposit=50.00,
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -592,10 +618,9 @@ class AddRentalViewTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
-
 
     def test_add_rental_authenticated(self):
         # Login as the user
@@ -625,6 +650,110 @@ class AddRentalViewTestCase(TestCase):
         self.assertEqual(rental.owner, self.owner)
         self.assertEqual(rental.status, "pending")
 
+    def test_add_rental_not_item_owner(self):
+        # Login as a different user (not the owner)
+        self.client.login(username="testrenter", password="password456")
+
+        # Make a POST request to add_rental view
+        response = self.client.post(reverse("add_rental", kwargs={"item_id": self.item.pk}))
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no rental was created
+        self.assertFalse(Rental.objects.filter(item=self.item).exists())
+
+    def test_add_rental_item_sold(self):
+        # Mark the item as sold
+        self.item.availability = 'sold'
+        self.item.save()
+
+        # Login as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Make a POST request to add_rental view
+        response = self.client.post(reverse("add_rental", kwargs={"item_id": self.item.pk}))
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no rental was created
+        self.assertFalse(Rental.objects.filter(item=self.item).exists())
+
+    def test_add_rental_active_rentals_exist(self):
+        # Create an active rental for the item
+        Rental.objects.create(
+            owner=self.owner,
+            renter=self.renter,
+            item=self.item,
+            start_date=datetime.today().date() - timedelta(days=5),
+            end_date=datetime.today().date() + timedelta(days=5),
+            status="pending"
+        )
+
+        # Login as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Make a POST request to add_rental view
+        response = self.client.post(reverse("add_rental", kwargs={"item_id": self.item.pk}))
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no rental was created and only 1 exists
+        self.assertEqual(Rental.objects.filter(item=self.item).count(), 1)
+
+    def test_add_rental_pending_purchases_exist(self):
+        # Create a pending purchase for the item
+        Purchase.objects.create(
+            owner=self.owner,
+            buyer=self.renter,
+            item=self.item,
+            deal_reserved_date=datetime.now(tz=sgt),
+            deal_confirmed_date=datetime.now(tz=sgt),
+            deal_complete_date=None,
+            deal_cancelled_date=None,
+            deal_date=datetime.today().date() + timedelta(1),
+            status="reserved"
+        )
+
+        # Login as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Make a POST request to add_rental view
+        response = self.client.post(reverse("add_rental", kwargs={"item_id": self.item.pk}))
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no rental was created
+        self.assertFalse(Rental.objects.filter(item=self.item).exists())
+
+    def test_add_rental_renter_is_owner(self):
+        # Login as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Prepare form data with the owner as the renter
+        form_data = {
+            "start_date": datetime.today().date(),
+            "end_date": datetime.today().date() + timedelta(days=7),
+            "renterid": "testowner",  # Owner as the renter
+        }
+
+        # Make a POST request to add_rental view with form data
+        response = self.client.post(reverse("add_rental", kwargs={"item_id": self.item.pk}), form_data)
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no rental was created
+        self.assertEqual(Rental.objects.filter(item=self.item).count(), 0)
+
 
 class AcceptRentalViewTestCase(TestCase):
     def setUp(self):
@@ -641,7 +770,7 @@ class AcceptRentalViewTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -698,7 +827,7 @@ class CompleteRentalViewTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -756,7 +885,7 @@ class CancelRentalViewTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -800,6 +929,324 @@ class CancelRentalViewTestCase(TestCase):
         )
 
 
+class AddPurchaseViewTestCase(TestCase):
+    def create_image(self, name="test_image.jpg", size=(1, 1), image_mode="RGB", image_format="JPEG"):
+        image_data = io.BytesIO()
+        image = Image.new(image_mode, size)
+        image.save(image_data, format=image_format)
+        image_data.seek(0)
+
+        return ContentFile(image_data.getvalue(), name=name)
+
+    def setUp(self):
+        self.client = Client()
+        self.owner = User.objects.create_user(username="testowner", email="testowner@example.com", password="password123")
+        self.buyer = User.objects.create_user(username="testbuyer", email="testbuyer@example.com", password="password456")
+        self.category = Category.objects.create(name="testcategory")
+        self.item = Item.objects.create(
+            owner=self.owner,
+            title="Test Item",
+            description="Test description",
+            category=self.category,
+            condition="excellent",
+            price_per_day=10.00,
+            deposit=50.00,
+            image="image.jpg",
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
+            deleted_date=None,
+        )
+
+    def test_add_purchase_authenticated(self):
+        # Login as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Prepare form data
+        form_data = {
+            "deal_date": datetime.today().date(),
+            "buyerid": "testbuyer",
+        }
+
+        form = PurchaseForm(data=form_data, files={"image": self.create_image()})
+
+        # Assert that the form is valid
+        self.assertTrue(form.is_valid())
+
+        # Make a POST request to add_purchase view with form data
+        response = self.client.post(reverse("add_purchase", kwargs={"item_id": self.item.pk}), form_data, follow=True)
+
+        # Check that the purchase was successfully added
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "irentstuffapp/item_detail.html")
+        self.assertTrue(Purchase.objects.filter(item=self.item).exists())
+        purchase = Purchase.objects.get(item=self.item)
+        self.assertEqual(purchase.buyer.username, "testbuyer")
+        self.assertEqual(purchase.owner, self.owner)
+        self.assertEqual(purchase.status, "reserved")
+
+    def test_add_purchase_not_item_owner(self):
+        # Login as a different user (not the owner)
+        self.client.login(username="testbuyer", password="password456")
+
+        # Make a POST request to add_purchase view
+        response = self.client.post(reverse("add_purchase", kwargs={"item_id": self.item.pk}))
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no purchase was created
+        self.assertFalse(Purchase.objects.filter(item=self.item).exists())
+
+    def test_add_purchase_item_sold(self):
+        # Mark the item as sold
+        self.item.availability = 'sold'
+        self.item.save()
+
+        # Login as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Make a POST request to add_purchase view
+        response = self.client.post(reverse("add_purchase", kwargs={"item_id": self.item.pk}))
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no purchase was created
+        self.assertFalse(Purchase.objects.filter(item=self.item).exists())
+
+    def test_add_purchasel_active_rentals_exist(self):
+        # Create an active rental for the item
+        Rental.objects.create(
+            owner=self.owner,
+            renter=self.buyer,  # use buyer account to test for renter
+            item=self.item,
+            start_date=datetime.today().date() - timedelta(days=5),
+            end_date=datetime.today().date() + timedelta(days=5),
+            status="pending"
+        )
+
+        # Login as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Make a POST request to add_purchase view
+        response = self.client.post(reverse("add_purchase", kwargs={"item_id": self.item.pk}))
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no purchase was created
+        self.assertFalse(Purchase.objects.filter(item=self.item).exists())
+
+    def test_add_purchase_pending_purchases_exist(self):
+        # Create a pending purchase for the item
+        Purchase.objects.create(
+            owner=self.owner,
+            buyer=self.buyer,
+            item=self.item,
+            deal_reserved_date=datetime.now(tz=sgt),
+            deal_confirmed_date=datetime.now(tz=sgt),
+            deal_complete_date=None,
+            deal_cancelled_date=None,
+            deal_date=datetime.today().date() + timedelta(1),
+            status="reserved"
+        )
+
+        # Login as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Make a POST request to add_purchase view
+        response = self.client.post(reverse("add_purchase", kwargs={"item_id": self.item.pk}))
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no purchase was created
+        self.assertEqual(Purchase.objects.filter(item=self.item).count(), 1)
+
+    def test_add_purchase_buyer_is_owner(self):
+        # Login as the owner
+        self.client.login(username="testowner", password="password123")
+        print(f"Purchase created start: {Purchase.objects.filter(item=self.item).count()}")
+
+        # Prepare form data with the owner as the buyer
+        form_data = {
+            "deal_date": datetime.today().date(),
+            "buyerid": "testowner",  # Owner as the buyer
+        }
+
+        # Make a POST request to add_purchase view with form data
+        response = self.client.post(reverse("add_purchase", kwargs={"item_id": self.item.pk}), form_data)
+
+        # Check that the user is redirected to the item detail page
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.pk}))
+
+        # Check that no purchase was created
+        print(f"Purchase created end: {Purchase.objects.filter(item=self.item).count()}")
+        self.assertFalse(Purchase.objects.filter(item=self.item).count(), 0)
+
+
+class AcceptPurchaseViewTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.owner = User.objects.create_user(username="testowner", email="testowner@example.com", password="password123")
+        self.buyer = User.objects.create_user(username="testbuyer", email="testbuyer@example.com", password="password456")
+        self.category = Category.objects.create(name="testcategory")
+        self.item = Item.objects.create(
+            owner=self.owner,
+            title="Test Item",
+            description="Test description",
+            category=self.category,
+            condition="excellent",
+            price_per_day=10.00,
+            deposit=50.00,
+            image="image.jpg",
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
+            deleted_date=None,
+        )
+
+    def test_accept_purchase(self):
+        # Log in as the buyer
+        self.client.login(username="testbuyer", password="password456")
+
+        # Create a pending purchase offer for the item
+        Purchase.objects.create(
+            buyer=self.buyer,
+            owner=self.owner,
+            item=self.item,
+            deal_date=datetime.now().date() + timedelta(1),
+            status="reserved",
+        )
+
+        # Make a POST request to accept the purchase offer
+        response = self.client.post(reverse("accept_purchase", kwargs={"item_id": self.item.id}), follow=True)
+
+        # Check if the purchase status is updated to 'confirmed'
+        purchase = Purchase.objects.get(item=self.item)
+        self.assertEqual(purchase.status, "confirmed")
+
+        # Check that there are 2 emails in the outbox
+        self.assertEqual(len(mail.outbox), 2)
+
+        # Check if the confirmation email is sent to the owner
+        self.assertEqual(mail.outbox[0].from_email, "admin@irentstuff.app")
+        self.assertEqual(mail.outbox[0].to, [self.owner.email])
+        self.assertEqual(mail.outbox[0].subject, "iRentStuff.app - you have a Purchase Acceptance")
+
+        # Check if the confirmation email is sent to the buyer
+        self.assertEqual(mail.outbox[1].from_email, "admin@irentstuff.app")
+        self.assertEqual(mail.outbox[1].to, [self.buyer.email])
+        self.assertEqual(mail.outbox[1].subject, "iRentStuff.app - You accepted a Purchase Offer")
+
+        # Check if the response redirects to the item detail page
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.id}))
+
+
+class CompletePurchaseViewTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.owner = User.objects.create_user(username="testowner", email="testowner@example.com", password="password123")
+        self.buyer = User.objects.create_user(username="testbuyer", email="testbuyer@example.com", password="password456")
+        self.category = Category.objects.create(name="testcategory")
+        self.item = Item.objects.create(
+            owner=self.owner,
+            title="Test Item",
+            description="Test description",
+            category=self.category,
+            condition="excellent",
+            price_per_day=10.00,
+            deposit=50.00,
+            image="image.jpg",
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
+            deleted_date=None,
+        )
+
+    def test_complete_purchase(self):
+        # Log in as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Create a confirmed purchase for the item
+        Purchase.objects.create(
+            buyer=self.buyer,
+            owner=self.owner,
+            item=self.item,
+            deal_date=datetime.now().date() + timedelta(1),
+            status="confirmed",
+        )
+
+        # Make a POST request to complete the purchase
+        response = self.client.post(reverse("complete_purchase", kwargs={"item_id": self.item.id}), follow=True)
+
+        # Check if the purchase status is updated to 'completed'
+        purchase = Purchase.objects.get(item=self.item)
+        self.assertEqual(purchase.status, "completed")
+
+        # Check that there is 1 email in the outbox
+        self.assertEqual(len(mail.outbox), 1)
+
+        # Check if the completion email is sent to the owner
+        self.assertEqual(mail.outbox[0].from_email, "admin@irentstuff.app")
+        self.assertEqual(mail.outbox[0].to, [self.owner.email])
+        self.assertEqual(mail.outbox[0].subject, "iRentStuff.app - you have completed a sale")
+
+        # Check if the response redirects to the item detail page
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.id}))
+
+
+class CancelPurchaseViewTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.owner = User.objects.create_user(username="testowner", email="testowner@example.com", password="password123")
+        self.buyer = User.objects.create_user(username="testbuyer", email="testbuyer@example.com", password="password456")
+        self.category = Category.objects.create(name="testcategory")
+        self.item = Item.objects.create(
+            owner=self.owner,
+            title="Test Item",
+            description="Test description",
+            category=self.category,
+            condition="excellent",
+            price_per_day=10.00,
+            deposit=50.00,
+            image="image.jpg",
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
+            deleted_date=None,
+        )
+
+    def test_cancel_purchase(self):
+        # Log in as the owner
+        self.client.login(username="testowner", password="password123")
+
+        # Create a confirmed purchase for the item
+        Purchase.objects.create(
+            buyer=self.buyer,
+            owner=self.owner,
+            item=self.item,
+            deal_date=datetime.now().date() + timedelta(1),
+            status="reserved",
+        )
+
+        # Make a POST request to complete the purchase
+        response = self.client.post(reverse("cancel_purchase", kwargs={"item_id": self.item.id}), follow=True)
+
+        # Check if the purchase status is updated to 'completed'
+        purchase = Purchase.objects.get(item=self.item)
+        self.assertEqual(purchase.status, "cancelled")
+
+        # Check that there is 1 email in the outbox
+        self.assertEqual(len(mail.outbox), 1)
+
+        # Check if the completion email is sent to the owner
+        self.assertEqual(mail.outbox[0].from_email, "admin@irentstuff.app")
+        self.assertEqual(mail.outbox[0].to, [self.owner.email])
+        self.assertEqual(mail.outbox[0].subject, "iRentStuff.app - you have cancelled a purchase")
+
+        # Check if the response redirects to the item detail page
+        self.assertRedirects(response, reverse("item_detail", kwargs={"item_id": self.item.id}))
+
+
 class AddReviewViewTestCase(TestCase):
     def setUp(self):
         self.client = Client()
@@ -815,7 +1262,7 @@ class AddReviewViewTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
         self.rental = Rental.objects.create(
@@ -874,7 +1321,7 @@ class ItemMessagesViewTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
         self.message = Message.objects.create(
@@ -917,8 +1364,8 @@ class CategoryInterestTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
-        self.category = Category.objects.create(name="testcategory") 
-        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=True, item_cd_crit= 6)
+        self.category = Category.objects.create(name="testcategory")
+        self.interest = Interest.objects.create(created_date=datetime.now(tz=sgt), discount=True, item_cd_crit=6)
         self.selected_categories = [self.category.id]
 
     def test_category_interest_post(self):
@@ -934,16 +1381,16 @@ class CategoryInterestTestCase(TestCase):
         self.assertIsNotNone(user_interests)
 
         interest = user_interests.interest
-        self.assertIsNotNone(interest) 
+        self.assertIsNotNone(interest)
 
-        self.assertTrue(interest.discount) 
-        self.assertEqual(interest.item_cd_crit, 6) 
+        self.assertTrue(interest.discount)
+        self.assertEqual(interest.item_cd_crit, 6)
         categories = list(interest.categories.all().values_list('id', flat=True))
         self.assertListEqual(categories, [self.category.id,])
 
     def test_category_interest_get(self):
         response = self.client.get(reverse("interest"))
-        self.assertEqual(response.status_code, 302) 
+        self.assertEqual(response.status_code, 302)
 
     def test_existing_user_interest_redirect(self):
         self.client.login(username="testuser", password="password123")
@@ -960,12 +1407,13 @@ class CategoryInterestTestCase(TestCase):
         response = self.client.get(reverse("interest"))
         self.assertTemplateUsed(response, 'irentstuffapp/interest.html')
 
+
 class DiscountDisplayTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
-        self.category = Category.objects.create(name="testcategory") 
-        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=True, item_cd_crit= 11)
+        self.category = Category.objects.create(name="testcategory")
+        self.interest = Interest.objects.create(created_date=datetime.now(tz=sgt), discount=True, item_cd_crit=11)
         self.selected_categories = [self.category.id]
         self.item = Item.objects.create(
             owner=self.user,
@@ -976,7 +1424,7 @@ class DiscountDisplayTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
             discount_percentage=10
         )  # to fix tmr
@@ -984,33 +1432,35 @@ class DiscountDisplayTestCase(TestCase):
     def test_deals_view(self):
         self.client.login(username="testuser", password="password123")
         response = self.client.get(reverse('deals'))
-        self.assertEqual(response.status_code, 302) 
-    
+        self.assertEqual(response.status_code, 302)
+
     def test_deals_view_with_interest(self):
         self.client.login(username="testuser", password="password123")
         user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
-        response = self.client.get(reverse('deals'), {'items': self.item}, follow = True)
-        self.assertEqual(response.status_code, 200) 
+        response = self.client.get(reverse('deals'), {'items': self.item}, follow=True)
+        self.assertEqual(response.status_code, 200)
+
 
 class NewItemsDisplayTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="testuser", email="testuser@example.com", password="password123")
-        self.category = Category.objects.create(name="testcategory") 
-        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=False, item_cd_crit= 6)
+        self.category = Category.objects.create(name="testcategory")
+        self.interest = Interest.objects.create(created_date=datetime.now(tz=sgt), discount=False, item_cd_crit=6)
         self.selected_categories = [self.category.id]
 
     def test_new_items_view(self):
         self.client.login(username="testuser", password="password123")
         response = self.client.get(reverse('new_items'))
-        self.assertEqual(response.status_code, 302) 
+        self.assertEqual(response.status_code, 302)
 
     def test_new_items_view_with_interest(self):
         self.client.login(username="testuser", password="password123")
         user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
         response = self.client.get(reverse('new_items'))
-        self.assertEqual(response.status_code, 200) 
-    
+        self.assertEqual(response.status_code, 200)
+
+
 class Top3DisplayTestCase(TestCase):
     def setUp(self):
         self.client = Client()
@@ -1018,23 +1468,24 @@ class Top3DisplayTestCase(TestCase):
         self.category = Category.objects.create(name="testcategory") 
         self.category2 = Category.objects.create(name="testcategory2")
         self.category3 = Category.objects.create(name="testcategory3")
-        self.interest = Interest.objects.create(created_date= datetime.now(tz=timezone.utc), discount=False, item_cd_crit= 8)
+        self.interest = Interest.objects.create(created_date=datetime.now(tz=sgt), discount=False, item_cd_crit=8)
         self.selected_categories = [self.category.id, self.category2.id, self.category3.id]
 
     def test_fav_categories_view(self):
         self.client.login(username="testuser", password="password123")
         response = self.client.get(reverse('fav_categories'))
-        self.assertEqual(response.status_code, 302) 
-    
+        self.assertEqual(response.status_code, 302)
+
     def test_fav_category_view_with_interest(self):
         self.client.login(username="testuser", password="password123")
         user_interests = UserInterests.objects.create(user=self.user, interest=self.interest)
         response = self.client.get(reverse('fav_categories'))
-        self.assertEqual(response.status_code, 200) 
+        self.assertEqual(response.status_code, 200)
+
 
 class IndexViewTestCase(TestCase):
     def test_index_view(self):
-    
+
         request = HttpRequest()
         response = index(request)
         self.assertEqual(response.status_code, 200)
