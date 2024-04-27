@@ -254,7 +254,6 @@ def item_detail_with_state_pattern(request, item_id):
                     'msgshow': msgshow,
                     'reviews': reviews,
                     'undos': undos})
-    print(f"[views.py, item_detail_with_state_pattern, line 298 - context item] {context}")
     return render(request, 'irentstuffapp/item_detail.html', context)
 
 
@@ -389,7 +388,6 @@ def item_messages(request, item_id, userid=0):
         if request.method == 'POST':
             message_form = MessageForm(request.POST)
             if message_form.is_valid():
-                print('valid')
                 message = message_form.save(commit=False)
                 message.sender = request.user
                 if request.user == item.owner:
@@ -450,7 +448,7 @@ def item_messages(request, item_id, userid=0):
             # Check if there are active rentals for this item
             active_rentals_obj = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled").first()
             pending_purchase_obj = Purchase.objects.filter(item=item).exclude(status="complete").exclude(status="cancelled").first()
-            
+
             if active_rentals_obj:
                 active_rentals = True
             if pending_purchase_obj:
@@ -459,7 +457,7 @@ def item_messages(request, item_id, userid=0):
             # Check if there is a rental offer for this item - pending - before start_date
             accept_rental_obj = Rental.objects.filter(item=item, renter=request.user, status='pending', start_date__gt=timezone.now()).first()
             accept_purchase_obj = Purchase.objects.filter(item=item, buyer=request.user, status='reserved', deal_date__gt=timezone.now()).first()
-            
+
             if accept_rental_obj:
                 accept_rental = True
             if accept_purchase_obj:
@@ -518,12 +516,10 @@ def add_rental(request, item_id, username=""):
         form = RentalForm(request.POST)
 
         # Check if the logged-in user is the creator, owner, or renter of the item
-        if request.user == form['renterid']:
-            # Optionally, you can handle unauthorized access here
+        if request.user.username == form['renterid'].value():
             messages.error(request, 'You cannot rent your own item.')
             return redirect('item_detail', item_id=item.id)
-
-        # form['status'] = 'pending'
+        
         if form.is_valid():
 
             renterid = form['renterid'].value()
@@ -663,10 +659,10 @@ def add_purchase(request, item_id, username=""):
         form = PurchaseForm(request.POST)
 
         # Check if the logged-in user is the creator, owner, or buyer of the item
-        if request.user == form['buyerid']:
+        if request.user.username == form['buyerid'].value():
             messages.error(request, 'You cannot purchase your own item.')
             return redirect('item_detail', item_id=item.id)
-
+        
         if form.is_valid():
 
             buyerid = form['buyerid'].value()
