@@ -76,8 +76,16 @@
             {% endif %}
           </div>
           <div class="card-text">
-            <div class="small">Buy Price:</div>
-            <div class="fs-6">${{ item.deposit }}</div>
+            {% if not item.festive_discount_description %}
+              <div class="small">Buy Price:</div>
+              <div class="fs-6">${{ item.deposit }}</div>
+            {% endif %}
+            {% if item.festive_discount_description %}
+              <p class="card-text">
+                <div class="small"><s>Buy Price:</s> <span style="color: red;">{{ item.festive_discount_description }} Festive Discount:</span></div>
+                <div class="fs-6"><s>${{ item.deposit }}</s> <span style="color: red;">${{ item.festive_discount_price }} ({{ item.festive_discount_percentage|floatformat }}%)</span></div>
+              </p>
+            {% endif %}
           </div>
 
         </div>

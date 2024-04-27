@@ -77,10 +77,18 @@
             {% endif %}
           </p>
 
-          <p class="card-text">
-          <div class="fs-6">Buy Price:</div>
-          <div class="fs-4">${{ item.deposit }}</div>
-          </p>
+          {% if not item.festive_discount_description %}
+            <p class="card-text">
+              <div class="fs-6">Buy Price:</div>
+              <div class="fs-4">${{ item.deposit }}</div>
+            </p>
+          {% endif %}
+          {% if item.festive_discount_description %}
+            <p class="card-text">
+              <div class="fs-6"><s>Buy Price:</s> <span class="fs-6" style="color: red;">{{ item.festive_discount_description }} Festive Discount:</span></div>
+              <div class="fs-4"><s>${{ item.deposit }}</s> <span class="fs-4" style="color: red;">${{ item.festive_discount_price }} ({{ item.festive_discount_percentage|floatformat }}%)</span></div>
+            </p>
+          {% endif %}
           {% endif %}
 
 
@@ -237,16 +245,18 @@
             <span class="fs-6">Deal Date:</span>
             <span class="fs-6">{{ pending_purchase.deal_date }}</span>
           </p>
+          {% if not item.festive_discount_description %}
           <p class="card-text">
-            <span class="fs-6">Buy Price:</span>
-            <span class="fs-6">${{ item.deposit }}</span>
+            <span class="fs-6">Buy Price: ${{ item.deposit }}</span>
           </p>
-            {% if item.festive_discount_description %}
+          {% endif %}
+          {% if item.festive_discount_description %}
           <p class="card-text">
-            <span class="fs-6" style="color: red;">Festive Discount Price:</span>
+            <span class="fs-6"><s>Buy Price: ${{ item.deposit }}</s> </span>
+            <span class="fs-6" style="color: red;">{{ item.festive_discount_description }} Festive Discount:</span>
             <span class="fs-6" style="color: red;">${{ item.festive_discount_price }} ({{ item.festive_discount_percentage|floatformat }}%)</span>
           </p>
-            {% endif %}
+          {% endif %}
           </p>
           {% if is_owner %}
           <p class="card-text">
