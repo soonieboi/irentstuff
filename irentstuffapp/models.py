@@ -392,7 +392,6 @@ class PurchaseObserver(ABC):
 class PurchaseEmailSender(PurchaseObserver):
     def update(self, purchase):
         # Logic to send email to the buyer or owner based on purchase state change
-        purchase_message = "email sender received update from purchase "
 
         if purchase.status == 'reserved':
             subject = 'iRentStuff.app - You made a Purchase reservation'
