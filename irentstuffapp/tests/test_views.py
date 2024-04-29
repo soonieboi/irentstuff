@@ -442,6 +442,88 @@ class EditItemViewTestCase(TestCase):
         self.assertEqual(self.item.deposit, 100.00)
         self.assertIn(self.image2.name.split(".")[0], self.item.image.name)
 
+    def test_edit_item_with_rental(self):
+        self.renter = User.objects.create_user(username="testrenter", email="rent@example.com", password="password321")
+
+        self.rental = Rental.objects.create(
+            renter=self.renter,
+            owner=self.user,
+            item=self.item,
+            start_date=date.today(),
+            end_date=date.today() + timedelta(days=3),
+            status="confirmed",
+        )
+        # Login as the user
+        self.client.login(username="testuser", password="password123")
+
+        # Get the initial count of items
+        initial_item_count = Item.objects.count()
+
+        # Prepare form data for editing the item
+        form_data = {
+            "title": "Updated Test Item",
+            "description": "Updated description",
+            "category": self.category2.id,
+            "condition": "good",
+            "price_per_day": 20.00,
+            "deposit": 100.00,
+            "discount_percentage": 5,
+            "image": self.image2,
+        }
+
+        # Make a POST request to edit_item view with form data
+        response = self.client.post(
+            reverse("edit_item", kwargs={"item_id": self.item.id}),
+            form_data,
+        )
+
+        # Check that the item was successfully edited
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Item.objects.count(), initial_item_count)  # Check if item count did not decrease
+        self.assertIsNotNone(Item.objects.filter(pk=self.item.id).first())
+
+    def test_edit_item_with_purchase(self):
+        self.buyer = User.objects.create_user(username="testbuyer", email="buy@example.com", password="password321")
+
+        self.purchase = Purchase.objects.create(
+            buyer=self.buyer,
+            owner=self.user,
+            item=self.item,
+            deal_date=date.today(),
+            status="confirmed",
+        )
+        # Login as the owner
+        self.client.login(username="testuser", password="password123")
+
+        # Get the initial count of items
+        initial_item_count = Item.objects.count()
+
+        # Prepare form data for editing the item
+        form_data = {
+            "title": "Updated Test Item",
+            "description": "Updated description",
+            "category": self.category2.id,
+            "condition": "good",
+            "price_per_day": 20.00,
+            "deposit": 100.00,
+            "discount_percentage": 5,
+            "image": self.image2,
+        }
+
+        # Make a POST request to edit_item view with form data
+        response = self.client.post(
+            reverse("edit_item", kwargs={"item_id": self.item.id}),
+            form_data,
+        )
+
+        # Make a POST request to edit view
+        response = self.client.post(reverse("edit_item", kwargs={"item_id": self.item.id}))
+
+        # Check that the item was successfully deleted
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Item.objects.count(), initial_item_count)  # Check if item count did not decrease
+        self.assertIsNotNone(Item.objects.filter(pk=self.item.id).first())
+
     def test_edit_item_not_authenticated_owner(self):
         self.notowner = User.objects.create_user(username="testuser2", email="test@example.com", password="password1234")
         # Login as the not item owner

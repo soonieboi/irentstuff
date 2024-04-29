@@ -20,7 +20,9 @@
         </div>
         {% elif field.name == 'festive_discounts' %}
         <label for="id_festive_discounts">(this will automatically include your item in sitewide festive discounts between 5-10% on purchase prices during festive holidays)</label>
-        <div class="form-group"><input type="checkbox" id="id_festive_discounts" name="{{ field.html_name }}">
+        <div class="form-group">
+            <input type="checkbox" id="{{ field.id_for_label }}" name="{{ field.html_name }}"
+            {% if field.value == True %} checked {% endif %}>
         </div>
         {% elif field.field.widget.input_type == 'select' and field.name != 'image'  %}
         <div>

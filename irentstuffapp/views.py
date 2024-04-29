@@ -48,6 +48,19 @@ def items_list(request):
     search_query = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
 
+    # Check for any festive discounts on purchase price
+    for item in Item.objects.all():
+        if item.festive_discounts and item.availability == 'available':
+            try:
+                item.calculate_festive_discount_price()
+            except Exception:
+                # This exception ensures that in the edge case where the day changes (e.g. past 12mn) the festive discount details are reset
+                item.festive_discount_description = item.festive_discount_percentage = item.festive_discount_price = None
+                item.save()
+        if item.festive_discounts is False:
+            item.festive_discount_description = item.festive_discount_percentage = item.festive_discount_price = None
+            item.save()
+
     if request.user.is_authenticated and request.resolver_match.url_name == 'items_list_my':
         items = Item.objects.filter(owner=request.user)
     else:
@@ -156,6 +169,18 @@ def item_detail_with_state_pattern(request, item_id):
     is_owner = request.user == item.owner
     # msgshow = True
     undos = False
+    
+    # Check for any festive discounts on purchase price
+    if item.festive_discounts and item.availability == 'available':
+        try:
+            item.calculate_festive_discount_price()
+        except Exception:
+            # This exception ensures that in the edge case where the day changes (e.g. past 12mn) the festive discount details are reset
+            item.festive_discount_description = item.festive_discount_percentage = item.festive_discount_price = None
+            item.save()
+    if item.festive_discounts is False:
+        item.festive_discount_description = item.festive_discount_percentage = item.festive_discount_price = None
+        item.save()
 
     context = {'item': item, 'user': request.user}
 
@@ -264,6 +289,18 @@ def edit_item(request, item_id):
     # Check if the user is the owner of the item
     if request.user != item.owner:
         # Optionally, you can handle unauthorized access here
+        return redirect('item_detail', item_id=item.id)
+    
+    # add logic to find if there is an associated existing rental
+    pending_rental = Rental.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled")
+    if pending_rental.exists():
+        messages.error(request, 'You cannot edit an item when rental status is Pending or Confirmed!')
+        return redirect('item_detail', item_id=item.id)
+
+    # add logic to find if there is an associated existing purchase
+    pending_purchases = Purchase.objects.filter(item=item).exclude(status="completed").exclude(status="cancelled")
+    if pending_purchases.exists():
+        messages.error(request, 'You cannot edit an item when purchase status is Reserved or Confirmed!')
         return redirect('item_detail', item_id=item.id)
 
     if request.method == 'POST':
@@ -650,7 +687,19 @@ def add_purchase(request, item_id, username=""):
         return redirect('item_detail', item_id=item.id)
 
     # Recalculate festive discount price so that it is accurate
-    item.calculate_festive_discount_price()
+
+    # Check for any festive discounts on purchase price
+    if item.festive_discounts and item.availability == 'available':
+        try:
+            item.calculate_festive_discount_price()
+        except Exception:
+            # This exception ensures that in the edge case where the day changes (e.g. past 12mn) the festive discount details are reset
+            item.festive_discount_description = item.festive_discount_percentage = item.festive_discount_price = None
+            item.save()
+    if item.festive_discounts is False:
+        item.festive_discount_description = item.festive_discount_percentage = item.festive_discount_price = None
+        item.save()
+
     festive_discount_description = item.festive_discount_description
     festive_discount_percentage = item.festive_discount_percentage
     festive_discount_price = item.festive_discount_price

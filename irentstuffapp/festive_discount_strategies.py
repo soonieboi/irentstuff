@@ -1,12 +1,29 @@
+from django.utils import timezone
 import datetime
 
 
-class DiscountStrategy:
+class Meta(type):
+    registry = []
+
+    def __new__(cls, name, bases, attrs):
+        cls_obj = super().__new__(cls, name, bases, attrs)
+        Meta.registry.append(cls_obj)
+        return cls_obj
+
+    @classmethod
+    def get_subclasses(cls):
+        return cls.registry
+
+
+class DiscountStrategy(metaclass=Meta):
     activation_date = None
 
     def calculate_discounted_deposit(self, deposit):
         discount_description, discount_percentage = self.get_discount_details(deposit)
-        discount_price = float(deposit) * (1-(discount_percentage*0.01))
+        if discount_percentage:
+            discount_price = float(deposit) * (1-(discount_percentage*0.01))
+        else:
+            discount_price = None
         return discount_description, discount_percentage, discount_price
 
     def get_discount_details(self, deposit):
@@ -41,7 +58,7 @@ class HariRayaHajiDiscountStrategy(DiscountStrategy):
 
 
 class TestDiscountStrategy(DiscountStrategy):
-    activation_date = datetime.date(2024, 4, 29)
+    activation_date = datetime.date(2024, 5, 4)
 
     def get_discount_details(self, deposit):
         discount_description = 'Test'
@@ -56,3 +73,18 @@ class DefaultDiscountStrategy(DiscountStrategy):
         discount_description = None
         discount_percentage = None
         return discount_description, discount_percentage
+
+
+def get_discount_strategy():
+    strategies = DiscountStrategy.get_subclasses()
+
+    # Use undiscounted strategy as default
+    discount_strategy = DefaultDiscountStrategy()
+
+    # Iterate through strategies to check if activation_date matches today
+    for strategy_class in strategies:
+        if timezone.now().date() == strategy_class.activation_date:
+            discount_strategy = strategy_class()
+            break
+
+    return discount_strategy

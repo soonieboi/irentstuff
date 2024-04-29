@@ -9,13 +9,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.html import strip_tags
 
-from .festive_discount_strategies import (
-    DefaultDiscountStrategy,
-    LabourDayDiscountStrategy,
-    HariRayaHajiDiscountStrategy,
-    VesakDayDiscountStrategy,
-    TestDiscountStrategy
-    )
+from .festive_discount_strategies import get_discount_strategy
 
 
 def send_email(subject, message, email_to):
@@ -164,20 +158,7 @@ class Item(models.Model):
 
     # Discount strategy for Purchase discounts
     def calculate_festive_discount_price(self):
-        strategies = [
-            LabourDayDiscountStrategy, VesakDayDiscountStrategy,
-            HariRayaHajiDiscountStrategy, TestDiscountStrategy,
-        ]
-
-        # Use undiscounted strategy as default
-        discount_strategy = DefaultDiscountStrategy()
-
-        # Iterate through strategies to check if activation_date matches today
-        for strategy_class in strategies:
-            if timezone.now().date() == strategy_class.activation_date:
-
-                discount_strategy = strategy_class()
-                break
+        discount_strategy = get_discount_strategy()
 
         (self.festive_discount_description,
          self.festive_discount_percentage,

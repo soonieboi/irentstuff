@@ -50,4 +50,4 @@ class DiscountStrategyTestCase(TestCase):
         description, percentage, price = strategy.calculate_discounted_deposit(deposit)
         self.assertIsNone(description)
         self.assertIsNone(percentage)
-        self.assertEqual(price, 100)
+        self.assertIsNone(price)
