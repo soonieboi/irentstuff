@@ -2,7 +2,6 @@ from django.test import SimpleTestCase
 from django.urls import reverse, resolve
 from irentstuffapp.views import (
     items_list,
-    item_detail,
     item_detail_with_state_pattern,
     add_item,
     edit_item,

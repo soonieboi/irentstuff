@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.test import TestCase
@@ -9,12 +9,16 @@ from irentstuffapp.forms import (
     ItemForm,
     ItemReviewForm,
     RentalForm,
+    PurchaseForm,
     MessageForm,
     InterestForm,
 )
-from irentstuffapp.models import Item, Category, Rental, Interest, UserInterests
+from irentstuffapp.models import Item, Category, Rental, Purchase, Interest, UserInterests
 from PIL import Image
 import io
+import pytz
+
+sgt = pytz.timezone('Asia/Singapore')
 
 
 class NameChangeFormTestCase(TestCase):
@@ -64,7 +68,7 @@ class ItemEditFormTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="item_images/test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -92,7 +96,7 @@ class ItemFormTestCase(TestCase):
     def create_image(
         self,
         name="test_image.jpg",
-        size=(100, 100),
+        size=(1, 1),
         image_mode="RGB",
         image_format="JPEG",
     ):
@@ -139,7 +143,7 @@ class ItemReviewFormTestCase(TestCase):
             condition="excellent",
             price_per_day=10.00,
             deposit=50.00,
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
         )
 
         # Create a test rental
@@ -147,8 +151,8 @@ class ItemReviewFormTestCase(TestCase):
             item=self.item,
             owner=self.user,
             renter=self.user,
-            start_date=datetime(2024, 2, 10, tzinfo=timezone.utc),
-            end_date=datetime(2024, 2, 15, tzinfo=timezone.utc),
+            start_date=datetime(2024, 2, 10, tzinfo=sgt),
+            end_date=datetime(2024, 2, 15, tzinfo=sgt),
             status="completed",
         )
 
@@ -166,7 +170,7 @@ class ItemReviewFormTestCase(TestCase):
         # Check if form is valid
         self.assertTrue(form.is_valid())
         # Check custom_label_from_instance method
-        self.assertEquals(form.custom_label_from_instance(self.rental), f'{self.rental.start_date} to {self.rental.end_date}' )
+        self.assertEquals(form.custom_label_from_instance(self.rental), f'{self.rental.start_date} to {self.rental.end_date}')
 
     def test_invalid_form(self):
         # Create form data with invalid rental ID
@@ -192,7 +196,7 @@ class RentalFormTestCase(TestCase):
     def create_image(
         self,
         name="test_image.jpg",
-        size=(100, 100),
+        size=(1, 1),
         image_mode="RGB",
         image_format="JPEG",
     ):
@@ -216,7 +220,7 @@ class RentalFormTestCase(TestCase):
             condition="excellent",
             price_per_day=10.00,
             deposit=50.00,
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
         )
 
     def test_valid_form(self):
@@ -237,7 +241,7 @@ class RentalFormTestCase(TestCase):
         # Create form data with invalid start date (earlier than today)
         form_data = {
             "renterid": str(self.user.id),
-            "start_date": datetime.now().date() - timedelta(days=1),
+            "start_date": datetime.now().date() - timedelta(days=2),
             "end_date": datetime.now().date() + timedelta(days=5),
         }
 
@@ -271,6 +275,73 @@ class RentalFormTestCase(TestCase):
         )
 
 
+class PurchaseFormTestCase(TestCase):
+
+    def create_image(
+        self,
+        name="test_image.jpg",
+        size=(1, 1),
+        image_mode="RGB",
+        image_format="JPEG",
+    ):
+        image_data = io.BytesIO()
+        image = Image.new(image_mode, size)
+        image.save(image_data, format=image_format)
+        image_data.seek(0)
+
+    def setUp(self):
+        # Create test users
+        self.owner = User.objects.create_user(
+            username="testowner", email="testowner@example.com", password="password123"
+        )
+        self.buyer = User.objects.create_user(
+            username="testbuyer", email="testbuyer@example.com", password="password456"
+        )
+
+        # Create a test item
+        self.item = Item.objects.create(
+            owner=self.owner,
+            image=self.create_image(),
+            title="Test Item",
+            description="Test description",
+            condition="excellent",
+            price_per_day=10.00,
+            deposit=50.00,
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
+        )
+
+    def test_valid_form(self):
+        # Create form data
+        form_data = {
+            "buyerid": str(self.buyer.id),
+            "deal_date": datetime.now().date() + timedelta(days=1),
+        }
+
+        # Create form instance
+        form = PurchaseForm(data=form_data)
+
+        # Check if form is valid
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_form(self):
+        # Create form data with invalid start date (earlier than today)
+        form_data = {
+            "buyerid": str(self.buyer.id),
+            "deal_date": datetime.now().date() - timedelta(days=2),
+        }
+
+        # Create form instance
+        form = PurchaseForm(data=form_data)
+
+        # Check if form is invalid
+        self.assertFalse(form.is_valid())
+
+        # Check if 'start_date' field has error message
+        self.assertTrue(
+            "Purchase date cannot be earlier than today." in form.errors.get("__all__")
+        )
+
+
 class MessageFormTestCase(TestCase):
     def setUp(self):
         self.owner = User.objects.create_user(username="owner", password="password123")
@@ -289,7 +360,7 @@ class MessageFormTestCase(TestCase):
             price_per_day=10.00,
             deposit=50.00,
             image="item_images/test_image.jpg",
-            created_date=datetime(2024, 2, 7, tzinfo=timezone.utc),
+            created_date=datetime(2024, 2, 7, tzinfo=sgt),
             deleted_date=None,
         )
 
@@ -312,20 +383,23 @@ class MessageFormTestCase(TestCase):
         # Check if the form is valid
         self.assertTrue(form.is_valid())
 
+
 class InterestFormTestCase(TestCase):
     def setUp(self):
-        self.interest = Interest.objects.create( 
-            discount= True, 
+        self.interest = Interest.objects.create(
+            discount=True,
             item_cd_crit=6,
             created_date=datetime.now(),
         )
-        self.interest.categories.set([Category.objects.create(name='Garden'), Category.objects.create(name='Toys'), Category.objects.create(name='Electronics')])
+        self.interest.categories.set([Category.objects.create(name='Garden'),
+                                      Category.objects.create(name='Toys'),
+                                      Category.objects.create(name='Electronics')])
 
     def test_valid_form(self):
         # Prepare form data
         form_data = {
             "categories": [Category.objects.create(name='Garden'), Category.objects.create(name='Toys'), Category.objects.create(name='Electronics')],
-            "discount": True, 
+            "discount": True,
             "item_cd_crit": 6,
             "created_date": datetime.now()
         }

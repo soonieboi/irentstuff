@@ -8,6 +8,7 @@
 
 <form class="shadow-sm bg-light col-11 col-sm-8 mx-auto card p-3 b-0" method="post"
     action="{% url 'edit_item' item_id=item.id %}" enctype="multipart/form-data">
+
     {% csrf_token %}
     {% for field in form %}
     <div class="form-group">
@@ -16,6 +17,12 @@
         <div> 
             <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}"
             name="{{ field.html_name }}" rows="6">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
+        </div>
+        {% elif field.name == 'festive_discounts' %}
+        <label for="id_festive_discounts">(this will automatically include your item in sitewide festive discounts between 5-10% on purchase prices during festive holidays)</label>
+        <div class="form-group">
+            <input type="checkbox" id="{{ field.id_for_label }}" name="{{ field.html_name }}"
+            {% if field.value == True %} checked {% endif %}>
         </div>
         {% elif field.field.widget.input_type == 'select' and field.name != 'image'  %}
         <div>
@@ -34,12 +41,15 @@
             <p> Change: <input type="file" class="form-control-file {% if field.errors %}is-invalid{% endif %}"
                 name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/*"> </p>
         </div>
+        {% elif field.name == 'deposit' %}
+        <label for="{{ field.id_for_label }}">/ Purchase price</label>
+        <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1" name="{{ field.html_name }}"
+            style="overflow:hidden">{% if field.value %}{{ field.value }}{% else %}{{ '' }}{% endif %}</textarea>
         {% elif field.name == 'discount_percentage' %}
         <div>
-            <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1"
-                name="{{ field.html_name }}">{% if field.value %}{{ field.value }}{% else %}{{ 0 }}{% endif %}</textarea>
-            </div>
-
+        <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1"
+            name="{{ field.html_name }}">{% if field.value %}{{ field.value }}{% else %}{{ 0 }}{% endif %}</textarea>
+        </div>
         {% else %}
         <div>
         <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" rows="1"
@@ -52,7 +62,6 @@
     </div>
     {% endfor %}
     <button class="btn btn-primary col-md-3 my-4" type="submit">Save Changes</button>
-
 </form>
 
 <style>

@@ -1,13 +1,16 @@
 from django import forms
-from django.contrib.auth.models import User
-from .models import Item, Rental, Message, Review, Interest
-from django.utils import timezone 
 from django.contrib.auth.forms import UserChangeForm
+from django.contrib.auth.models import User
+from django.utils import timezone
+
+from .models import Item, Rental, Message, Review, Interest, Purchase
+
 
 class NameChangeForm(UserChangeForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name']
+
 
 class PasswordChangeForm(forms.Form):
     old_password = forms.CharField(widget=forms.PasswordInput)
@@ -19,30 +22,31 @@ class PasswordChangeForm(forms.Form):
 class ItemEditForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit', 'discount_percentage']
+        fields = ['title', 'image', 'description', 'category', 'condition',
+                  'price_per_day', 'deposit', 'discount_percentage', 'festive_discounts']
+
 
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['title', 'image', 'description', 'category', 'condition', 'price_per_day', 'deposit', 'discount_percentage']
+        fields = ['title', 'image', 'description', 'category', 'condition',
+                  'price_per_day', 'deposit', 'discount_percentage', 'festive_discounts']
+
 
 class ItemReviewForm(forms.ModelForm):
-
-    
     class Meta:
         model = Review
-        fields = ['rental','rating','comment']
+        fields = ['rental', 'rating', 'comment']
 
     def __init__(self, user, item, *args, **kwargs):
         super(ItemReviewForm, self).__init__(*args, **kwargs)
         # Limit the rental choices to the ones belonging to the current user and current item
-        print(f"item: {item}")
         self.fields['rental'].queryset = Rental.objects.filter(renter=user, item=item, status='completed')
         self.fields['rental'].label_from_instance = self.custom_label_from_instance
 
     def custom_label_from_instance(self, obj):
         return f'{obj.start_date} to {obj.end_date}'
-        
+
 
 class RentalForm(forms.ModelForm):
 
@@ -80,6 +84,36 @@ class RentalForm(forms.ModelForm):
 
         return cleaned_data
 
+
+class PurchaseForm(forms.ModelForm):
+
+    buyerid = forms.CharField(
+        label="Buyer (ID)",
+        max_length=90,
+        widget=forms.TextInput(attrs={'class': 'form-control autocomplete'}),
+        required=True,
+    )
+
+    class Meta:
+        model = Purchase
+        fields = ['deal_date']
+        widgets = {
+            'deal_date': forms.DateInput(attrs={'class': 'form-control datepicker'}),
+            'item': forms.HiddenInput(),
+            'owner': forms.HiddenInput(),
+            'status': forms.HiddenInput(),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        deal_date = cleaned_data.get('deal_date')
+
+        if deal_date < timezone.now().date():
+            raise forms.ValidationError('Purchase date cannot be earlier than today.')
+
+        return cleaned_data
+
+
 class MessageForm(forms.ModelForm):
 
     # Override the content field to use TextInput
@@ -89,7 +123,8 @@ class MessageForm(forms.ModelForm):
         model = Message
         fields = ['content']
 
+
 class InterestForm(forms.ModelForm):
     class Meta:
         model = Interest
-        fields = ['categories'] 
+        fields = ['categories']
