@@ -19,6 +19,12 @@
     href="{% url 'item_detail' item_id=item.id %}#acceptrental">Check it out</a>
 </div>
 {% endif %}
+{% if accept_purchase %}
+<div class="col-11 col-sm-10 mx-auto d-grid  d-flex justify-content-between bg-warning m-0 p-2">
+  <span class="msglist align-middle text-white py-1 px-4">You have a purchase offer!</span><a class="btn btn-light p-1 px-2" type="button"
+    href="{% url 'item_detail' item_id=item.id %}#acceptpurchase">Check it out</a>
+</div>
+{% endif %}
 {% endif %}
 
 {% if item_messages %}

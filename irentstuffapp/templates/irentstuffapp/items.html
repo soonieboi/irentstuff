@@ -11,7 +11,7 @@
           <button class="tablink btn btn-primary btn-block" onclick="openPage('{% url 'fav_categories' %}')">Favourite Categories</button>
       </div>
       <div class="col-sm-3">
-          <button class="tablink btn btn-primary btn-block" onclick="openPage('{% url 'deals' %}')">Items on Discount</button>
+          <button class="tablink btn btn-primary btn-block" onclick="openPage('{% url 'deals' %}')">Items on Rental Discount</button>
       </div>
       <div class="col-sm-3">
           <button class="tablink btn btn-primary btn-block" onclick="openPage('{% url 'new_items' %}')">New Items</button>
@@ -45,7 +45,7 @@
   {% for item in items %}
   <!-- {{ package|pprint }} -->
   
-
+  {% if item.availability != 'sold' %}
   <div class="itm col-xl-2 col-md-3 col-sm-6 p-2">
     <a href="{% url 'item_detail' item_id=item.id %}">
       
@@ -76,8 +76,16 @@
             {% endif %}
           </div>
           <div class="card-text">
-            <div class="small">Buy Price:</div>
-            <div class="fs-6">${{ item.deposit }}</div>
+            {% if not item.festive_discount_description %}
+              <div class="small">Buy Price:</div>
+              <div class="fs-6">${{ item.deposit }}</div>
+            {% endif %}
+            {% if item.festive_discount_description %}
+              <p class="card-text">
+                <div class="small"><s>Buy Price:</s> <span style="color: red;">{{ item.festive_discount_description }} Festive Discount:</span></div>
+                <div class="fs-6"><s>${{ item.deposit }}</s> <span style="color: red;">${{ item.festive_discount_price }} ({{ item.festive_discount_percentage|floatformat }}%)</span></div>
+              </p>
+            {% endif %}
           </div>
 
         </div>
@@ -85,6 +93,7 @@
       </div>
     </a>
   </div>
+  {% endif %}
 
   {% endfor %}
   {% endif %}
@@ -130,12 +139,12 @@
     <script>
         function openPage(url) {
 
-        // Check if the user is logged in
-        {% if user.is_authenticated %}
-            window.location.href = url;
-        {% else %}
-            window.location.href = '{% url "home" %}';
-        {% endif %}
+          // Check if the user is logged in
+          {% if user.is_authenticated %}
+              window.location.href = url;
+          {% else %}
+              window.location.href = '{% url "home" %}';
+          {% endif %}
         }
   
     </script>
