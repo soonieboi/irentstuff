@@ -298,7 +298,8 @@ class ItemsListViewTestCase(TestCase):
         response = self.client.get(reverse("items_list_my"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "irentstuffapp/items.html")
-        self.assertContains(response, "Test Item 1")
+        #user should not see own items in items list
+        self.assertNotContains(response, "Test Item 1")
         self.assertNotContains(response, "Test Item 2")
 
     def test_items_list_search_query(self):
