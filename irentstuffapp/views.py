@@ -884,15 +884,17 @@ def logout_user(request):
 @login_required
 def category_interest(request):
     categories = Category.objects.all()
+    existing_user_interests = UserInterests.objects.filter(user=request.user).first()
 
     context = {
-        'categories': categories
+        'categories': categories,
+        'existing_user_interests': existing_user_interests,
     }
 
     if request.method == 'POST':
         selected_categories = request.POST.get('selected_categories')
         item_cd_crit = request.POST.get('item_cd_crit')
-        existing_user_interests = UserInterests.objects.filter(user=request.user).first()
+        # existing_user_interests = UserInterests.objects.filter(user=request.user).first()
 
         if selected_categories:
             selected_categories_list = selected_categories.split(',')

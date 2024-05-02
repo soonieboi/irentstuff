@@ -147,7 +147,7 @@
   {% if reviews %}
   <h4>Reviews</h4>
   {% endif %}
-  {% for review in reviews %}
+{% comment %}   {% for review in reviews %}
   <div class="card mb-3">
     <div class="row g-4">
 
@@ -156,7 +156,7 @@
         <div class="card-body">
 
           <div class="card-text">
-            <span class="fs-6"><strong>Rating: {{review.rating}}/6</strong></span>
+            <span class="fs-6"><strong>Rating: {{review.rating}}/5</strong></span>
           </div>
           <div class="card-text">
             <span class="fs-6">{{review.author}}:</span>
@@ -167,7 +167,31 @@
       </div>
     </div>
   </div>
-  {% endfor %}
+  {% endfor %} {% endcomment %}
+
+  {% for review in reviews %}
+<div class="card mb-3">
+    <div class="row g-4">
+        <div class="col-md-8">
+            <div class="card-body">
+                <div class="card-text">
+                    <span class="fs-6">
+                      <strong>
+                        Rating: {% for _ in "12345"|slice:review.rating %}
+                        <span class="star">★</span>
+                        {% endfor %}
+                      </strong>
+                    </span>
+                </div>
+                <div class="card-text">
+                    <span class="fs-6">{{review.author}}:</span>
+                    <span class="fs-6 m-2">{{ review.comment }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
   {% if active_rental %}
 
@@ -311,6 +335,12 @@
   {% endif %}
 </div>
 
-
+<style>
+.star {
+  opacity: 1;
+  color: #ff9933;
+  font-size: 1em;
+}
+</style>
 
 {% endblock %}
