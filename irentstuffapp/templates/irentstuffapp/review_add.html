@@ -38,11 +38,14 @@
     opacity: 0.5;
   }
 
-  .star-rating span:hover:before,
-  .star-rating span:hover ~ span:before,
-  .star-rating span.clicked:before {
+  .star-rating:hover > span:before {
     opacity: 1;
   }
+
+  .star-rating > span:hover ~ span::before {
+    opacity: 0.5;
+  }
+
   .star-rating span.clicked {
     opacity: 1;
     color: #ff9933;
