@@ -61,12 +61,15 @@ def items_list(request):
             item.festive_discount_description = item.festive_discount_percentage = item.festive_discount_price = None
             item.save()
 
+    exclude_user = True
+
     if request.user.is_authenticated and request.resolver_match.url_name == 'items_list_my':
         items = Item.objects.filter(owner=request.user)
+        exclude_user = False
     else:
         items = Item.objects.all()
 
-    exclude_user = True
+    
 
     if search_query:
         exclude_user = False
