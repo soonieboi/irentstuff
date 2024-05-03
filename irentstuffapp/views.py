@@ -61,19 +61,33 @@ def items_list(request):
             item.festive_discount_description = item.festive_discount_percentage = item.festive_discount_price = None
             item.save()
 
+    exclude_user = True
+
     if request.user.is_authenticated and request.resolver_match.url_name == 'items_list_my':
         items = Item.objects.filter(owner=request.user)
+        exclude_user = False
     else:
         items = Item.objects.all()
 
-    if search_query:
-        items = items.filter(title__icontains=search_query)
+    
 
+    if search_query:
+        exclude_user = False
+        items = items.filter(title__icontains=search_query)
+ 
     if category_filter:
+        exclude_user = False
         items = items.filter(category__name__iexact=category_filter)
 
+
     categories = Category.objects.all()
-    items = items_discount_price(items)
+
+    if items:
+        items = items_discount_price(items)
+
+    if request.user.is_authenticated and exclude_user:
+        if items:
+            items = items.exclude(owner=request.user)
 
     context = {
         'items': items,
@@ -92,8 +106,9 @@ def deals_view(request):
     try:
         user_interests = UserInterests.objects.get(user=request.user)
         template = ItemsDiscountDisplay()
-        items = template.get_items(user_interests.interest)
-        items = items_discount_price(items)
+        items = template.get_items(user_interests.interest).exclude(owner=request.user)
+        if items:
+            items = items_discount_price(items)
 
         return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
     except UserInterests.DoesNotExist:
@@ -105,8 +120,9 @@ def new_items_view(request):
     try:
         user_interests = UserInterests.objects.get(user=request.user)
         template = NewlyListedItemsDisplay()
-        items = template.get_items(user_interests.interest)
-        items = items_discount_price(items)
+        items = template.get_items(user_interests.interest).exclude(owner=request.user)
+        if items:
+            items = items_discount_price(items)
 
         return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
     except UserInterests.DoesNotExist:
@@ -118,8 +134,9 @@ def fav_categories_view(request):
     try:
         user_interests = UserInterests.objects.get(user=request.user)
         template = Top3CategoryDisplay()
-        items = template.get_items(user_interests.interest)
-        items = items_discount_price(items)
+        items = template.get_items(user_interests.interest).exclude(owner=request.user)
+        if items:
+            items = items_discount_price(items)
 
         return render(request, 'irentstuffapp/items.html', {'items': items, 'no_items_message': not items.exists()})
     except UserInterests.DoesNotExist:
