@@ -1,5 +1,5 @@
 # Practise module repo
-iRentStuff is an online rental service where users can post their used items up for rental.
+iRentStuff is an online rental service where users can post their used items up for rental. iRentStuff is live at [https://irentstuff.app](https://irentstuff.app)
 
 ## Defining the Problem Space & Current Landscape:
 
